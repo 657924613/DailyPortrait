@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FileProvider 路径声明
+    暴露沙盒视频目录给系统播放器
+-->
+<paths>
+    <!-- 沙盒 Movies 目录（视频最终存放） -->
+    <external-files-path
+        name="movies"
+        path="Movies/" />
+
+    <!-- 沙盒 cache 目录（临时合成文件，用不上但保留） -->
+    <external-cache-path
+        name="cache"
+        path="." />
+</paths>

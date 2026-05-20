@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DailyPortrait · Neo Brutalism</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root {
+    --bg: #FAF7EE;
+    --paper: #FFFFFF;
+    --ink: #0A0A0A;
+    --primary: #FFE74C;
+    --accent: #FF5757;
+    --blue: #4D7CFF;
+    --green: #3DDC84;
+    --text: #0A0A0A;
+    --text-2: #555555;
+    --focus-ring: #FF5757;
+    --border-w: 2.5px;
+    --radius: 0px;
+    --shadow-hard: 5px 5px 0 0 var(--ink);
+    --shadow-hard-lg: 8px 8px 0 0 var(--ink);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: "Space Grotesk", "Inter", -apple-system, "PingFang SC", system-ui, sans-serif;
+    background: var(--bg);
+    background-image:
+      linear-gradient(rgba(10,10,10,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(10,10,10,0.04) 1px, transparent 1px);
+    background-size: 20px 20px;
+    color: var(--text); min-height: 100vh;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 32px 16px; gap: 32px;
+  }
+  button:focus-visible, [role="button"]:focus-visible, [role="tab"]:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 3px;
+  }
+  .phone {
+    width: 390px; height: 844px; background: var(--bg);
+    border: 4px solid var(--ink);
+    border-radius: 0;
+    box-shadow: var(--shadow-hard-lg);
+    position: relative; overflow: hidden; flex-shrink: 0;
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 130px; height: 26px; background: var(--ink);
+    border-bottom-left-radius: 14px; border-bottom-right-radius: 14px;
+    z-index: 100;
+  }
+  .screen { width: 100%; height: 100%; overflow: hidden; position: relative; }
+  .status-bar {
+    height: 50px; padding: 14px 28px 0; display: flex;
+    justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700;
+  }
+  /* Bottom tab — chunky */
+  .tab-bar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 76px;
+    background: var(--paper);
+    border-top: 4px solid var(--ink);
+    display: flex; padding: 0;
+  }
+  .tab-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px;
+    border: none; background: transparent; cursor: pointer; border-radius: 0;
+    color: var(--text-2); font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .tab-item:not(:last-child) { border-right: 4px solid var(--ink); }
+  .tab-item.active { background: var(--primary); color: var(--ink); }
+  .tab-item svg { width: 22px; height: 22px; stroke-width: 2.5; }
+  /* Dashboard */
+  .dash-page { padding: 60px 16px 90px; height: 100%; overflow-y: auto; }
+  .dash-header {
+    border: 3px solid var(--ink); background: var(--ink); color: var(--paper);
+    padding: 14px 18px; margin-bottom: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: var(--shadow-hard);
+  }
+  .dash-title {
+    font-size: 22px; font-weight: 900; letter-spacing: -0.5px;
+    text-transform: uppercase;
+  }
+  .dash-title-em { color: var(--primary); }
+  .export-btn {
+    padding: 8px 14px; background: var(--primary); border: 2.5px solid var(--paper);
+    color: var(--ink); font-size: 11px; font-weight: 800; cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    min-height: 32px; min-width: 48px;
+  }
+  .empty-state {
+    border: 3px solid var(--ink); background: var(--paper);
+    padding: 48px 24px; text-align: center; box-shadow: var(--shadow-hard-lg);
+    display: flex; flex-direction: column; align-items: center; gap: 18px;
+  }
+  .empty-icon {
+    width: 100px; height: 100px; background: var(--primary);
+    border: 3px solid var(--ink);
+    display: flex; align-items: center; justify-content: center; font-size: 48px;
+    box-shadow: var(--shadow-hard);
+  }
+  .empty-text { font-size: 14px; color: var(--text-2); line-height: 1.6; }
+  .empty-text strong {
+    display: block; font-size: 22px; font-weight: 900; color: var(--text);
+    margin-bottom: 6px; text-transform: uppercase;
+  }
+  .cta-primary {
+    padding: 14px 28px; border: 3px solid var(--ink);
+    background: var(--accent); color: var(--paper);
+    font-size: 14px; font-weight: 900; cursor: pointer; text-transform: uppercase;
+    letter-spacing: 0.05em; box-shadow: var(--shadow-hard);
+    min-height: 48px; min-width: 48px; transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .cta-primary:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 0 var(--ink); }
+  .bento { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .card {
+    background: var(--paper); border: 3px solid var(--ink); padding: 16px;
+    box-shadow: var(--shadow-hard);
+  }
+  .today-card {
+    grid-column: span 2; padding: 16px; display: flex; gap: 14px; align-items: center;
+    background: var(--primary);
+  }
+  .today-thumb-placeholder {
+    width: 84px; height: 84px;
+    background: var(--accent); border: 3px solid var(--ink);
+    display: flex; align-items: center; justify-content: center; font-size: 38px;
+    flex-shrink: 0;
+  }
+  .today-info { flex: 1; }
+  .today-label {
+    font-size: 11px; color: var(--ink); margin-bottom: 4px;
+    font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .today-title { font-size: 18px; font-weight: 900; margin-bottom: 6px; line-height: 1.2; }
+  .today-time {
+    font-size: 12px; font-weight: 800;
+    background: var(--ink); color: var(--primary);
+    padding: 3px 10px; display: inline-block;
+  }
+  .streak-card { display: flex; flex-direction: column; align-items: center; padding: 16px; background: var(--accent); color: var(--paper); }
+  .streak-emoji { font-size: 32px; margin-bottom: 4px; }
+  .streak-num { font-size: 36px; font-weight: 900; line-height: 1; }
+  .streak-label { font-size: 10px; margin-top: 6px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
+  .week-card { padding: 16px; background: var(--blue); color: var(--paper); }
+  .week-title {
+    font-size: 11px; margin-bottom: 12px;
+    font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .week-dots { display: flex; justify-content: space-between; }
+  .day-dot {
+    width: 28px; height: 28px;
+    border: 2.5px solid var(--paper);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800;
+  }
+  .day-dot.done { background: var(--paper); color: var(--blue); }
+  .day-dot.today {
+    background: var(--primary); color: var(--ink);
+    border-color: var(--ink);
+  }
+  .history-section { margin-top: 18px; }
+  .history-title {
+    font-size: 13px; font-weight: 900; margin-bottom: 12px; padding-left: 4px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .history-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .hist-item {
+    aspect-ratio: 1; border: 3px solid var(--ink);
+    display: flex; align-items: flex-end; padding: 6px;
+    box-shadow: 4px 4px 0 0 var(--ink);
+  }
+  .hist-item:nth-child(6n+1) { background: var(--primary); }
+  .hist-item:nth-child(6n+2) { background: var(--blue); }
+  .hist-item:nth-child(6n+3) { background: var(--green); }
+  .hist-item:nth-child(6n+4) { background: var(--accent); }
+  .hist-item:nth-child(6n+5) { background: #C490FF; }
+  .hist-item:nth-child(6n+6) { background: var(--paper); }
+  .hist-date {
+    font-size: 11px; padding: 3px 6px;
+    background: var(--ink); color: var(--paper); font-weight: 800;
+  }
+  /* Sheet */
+  .sheet-backdrop {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .sheet {
+    width: 100%; background: var(--paper); border: 4px solid var(--ink);
+    padding: 24px 20px; box-shadow: var(--shadow-hard-lg);
+  }
+  .sheet-title {
+    font-size: 22px; font-weight: 900; margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: -0.5px;
+  }
+  .sheet-desc {
+    font-size: 13px; color: var(--text-2); margin-bottom: 24px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .progress-track {
+    height: 24px; background: var(--paper);
+    border: 3px solid var(--ink); margin-bottom: 8px; overflow: hidden;
+  }
+  .progress-fill { height: 100%; background: var(--primary); transition: width 0.3s; }
+  .progress-text { font-size: 13px; font-weight: 700; margin-bottom: 20px; }
+  .sheet-done-icon {
+    width: 80px; height: 80px; background: var(--green);
+    border: 3px solid var(--ink); box-shadow: var(--shadow-hard);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 44px; color: var(--ink); margin: 0 auto 16px; font-weight: 900;
+  }
+  /* Camera */
+  .cam-page { width: 100%; height: 100%; background: var(--ink); position: relative; overflow: hidden; }
+  .cam-viewfinder { position: absolute; inset: 0; background: #1a1a1a; }
+  .face-mockup {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 120px; opacity: 0.25; filter: grayscale(1);
+  }
+  .guide-frame {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 280px; height: 360px;
+    border: 4px dashed rgba(255,255,255,0.5);
+  }
+  .guide-frame.misaligned { border: 5px solid var(--accent); }
+  .guide-frame.aligned { border: 5px solid var(--primary); animation: pulse 1.5s infinite; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,231,76,0.6); }
+    50% { box-shadow: 0 0 0 16px rgba(255,231,76,0); }
+  }
+  .guide-corners {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 280px; height: 360px;
+  }
+  .guide-corner {
+    position: absolute; width: 24px; height: 24px;
+    border: 4px solid var(--paper);
+  }
+  .guide-corner.tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+  .guide-corner.tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+  .guide-corner.bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+  .guide-corner.br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+  .ring-icon {
+    position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+    padding: 4px 14px; font-size: 14px; font-weight: 900;
+    border: 3px solid var(--ink); text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .ring-icon.red { background: var(--accent); color: var(--paper); }
+  .ring-icon.green { background: var(--primary); color: var(--ink); }
+  .onion-overlay {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 280px; height: 360px;
+    background:
+      repeating-linear-gradient(45deg, rgba(255,231,76,0.25), rgba(255,231,76,0.25) 4px, transparent 4px, transparent 12px),
+      radial-gradient(circle, rgba(255,231,76,0.35) 0%, transparent 70%);
+  }
+  .onion-control {
+    position: absolute; bottom: 200px; left: 16px; right: 16px;
+    background: var(--paper); border: 3px solid var(--ink); padding: 12px 14px;
+    box-shadow: var(--shadow-hard);
+  }
+  .onion-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .onion-label { font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; }
+  .onion-value { font-size: 14px; font-weight: 900; background: var(--primary); padding: 2px 8px; border: 2px solid var(--ink); }
+  .slider-track { height: 12px; background: var(--paper); border: 2.5px solid var(--ink); position: relative; }
+  .slider-fill { height: 100%; background: var(--primary); width: 60%; }
+  .slider-thumb {
+    position: absolute; top: 50%; left: 60%; transform: translate(-50%, -50%);
+    width: 22px; height: 22px; background: var(--accent);
+    border: 2.5px solid var(--ink);
+  }
+  .cam-topbar {
+    position: absolute; top: 50px; left: 0; right: 0; padding: 12px 16px;
+    display: flex; justify-content: space-between; align-items: center; z-index: 10;
+  }
+  .cam-iconbtn {
+    width: 44px; height: 44px;
+    background: var(--paper); border: 3px solid var(--ink);
+    color: var(--ink); font-size: 18px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; box-shadow: 3px 3px 0 0 var(--ink);
+  }
+  .thumb-corner {
+    position: absolute; top: 56px; right: 16px; width: 56px; height: 56px;
+    border: 3px solid var(--paper); overflow: hidden; z-index: 10;
+    background: var(--primary); display: flex; align-items: center; justify-content: center;
+    font-size: 28px; animation: thumbpop 0.3s ease;
+    box-shadow: 4px 4px 0 0 var(--paper);
+  }
+  @keyframes thumbpop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  .shutter-row {
+    position: absolute; bottom: 50px; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: center; gap: 50px;
+  }
+  .shutter {
+    width: 80px; height: 80px;
+    background: var(--paper); border: 4px solid var(--ink);
+    cursor: pointer; box-shadow: 5px 5px 0 0 var(--accent);
+    min-width: 48px; min-height: 48px;
+    position: relative; transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .shutter::after {
+    content: ""; position: absolute; inset: 6px;
+    background: var(--accent); border: 3px solid var(--ink);
+  }
+  .shutter:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 0 var(--accent); }
+  .switch-btn {
+    width: 48px; height: 48px;
+    background: var(--paper); border: 3px solid var(--ink);
+    color: var(--ink); font-size: 22px; cursor: pointer;
+    box-shadow: 3px 3px 0 0 var(--paper);
+  }
+  .perm-card {
+    position: absolute; top: 50%; left: 20px; right: 20px; transform: translateY(-50%);
+    background: var(--paper); border: 4px solid var(--ink); padding: 28px 22px;
+    text-align: center; box-shadow: var(--shadow-hard-lg);
+  }
+  .perm-icon {
+    font-size: 48px; width: 96px; height: 96px;
+    background: var(--primary); border: 3px solid var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 18px; box-shadow: var(--shadow-hard);
+  }
+  .perm-title {
+    font-size: 22px; font-weight: 900; margin-bottom: 10px;
+    text-transform: uppercase; letter-spacing: -0.3px;
+  }
+  .perm-desc { font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 22px; font-weight: 600; }
+  .countdown-overlay {
+    position: absolute; inset: 0; background: var(--ink); z-index: 20;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .countdown-num {
+    font-size: 220px; font-weight: 900; color: var(--primary);
+    -webkit-text-stroke: 6px var(--ink);
+    animation: countpop 1s ease infinite;
+  }
+  @keyframes countpop {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  .flash-white { position: absolute; inset: 0; background: var(--paper); z-index: 30; animation: flash 0.2s ease; }
+  @keyframes flash { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
+  .processing-overlay {
+    position: absolute; inset: 0; background: var(--ink); z-index: 20;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  }
+  .spinner-blocks {
+    display: flex; gap: 6px;
+  }
+  .spinner-blocks span {
+    width: 16px; height: 28px; background: var(--primary);
+    border: 2.5px solid var(--paper); animation: bounce 0.8s ease infinite;
+  }
+  .spinner-blocks span:nth-child(2) { animation-delay: 0.15s; background: var(--accent); }
+  .spinner-blocks span:nth-child(3) { animation-delay: 0.3s; background: var(--blue); }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  .processing-text {
+    color: var(--paper); font-size: 13px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .preview-page {
+    position: absolute; inset: 0; background: var(--ink); z-index: 25;
+    display: flex; flex-direction: column;
+  }
+  .preview-img {
+    flex: 1; margin: 16px;
+    background: var(--primary); border: 4px solid var(--paper);
+    display: flex; align-items: center; justify-content: center; font-size: 130px;
+  }
+  .preview-actions { padding: 0 16px 24px; display: flex; gap: 12px; }
+  .preview-btn {
+    flex: 1; padding: 16px; border: 3px solid var(--paper);
+    font-size: 13px; font-weight: 900; cursor: pointer; min-height: 48px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .preview-btn.retake { background: var(--ink); color: var(--paper); }
+  .preview-btn.use { background: var(--primary); color: var(--ink); border-color: var(--ink); }
+  .snackbar {
+    position: absolute; bottom: 20px; left: 16px; right: 16px;
+    background: var(--accent); color: var(--paper);
+    border: 3px solid var(--ink); padding: 14px 16px;
+    box-shadow: var(--shadow-hard); z-index: 50;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  }
+  .snackbar-text { font-size: 13px; font-weight: 800; flex: 1; text-transform: uppercase; letter-spacing: 0.03em; }
+  .snackbar-btn {
+    padding: 6px 14px; background: var(--paper); border: 2.5px solid var(--ink);
+    color: var(--ink); font-size: 11px; font-weight: 900; cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    min-height: 32px; min-width: 48px;
+  }
+  /* Onboarding */
+  .onb-page {
+    width: 100%; height: 100%; padding: 60px 24px 40px;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  }
+  .onb-skip {
+    position: absolute; top: 60px; right: 16px;
+    background: var(--paper); border: 2.5px solid var(--ink);
+    color: var(--ink); font-size: 12px; cursor: pointer; padding: 8px 14px;
+    min-height: 36px; font-weight: 800; text-transform: uppercase;
+    box-shadow: 3px 3px 0 0 var(--ink);
+  }
+  .onb-hero {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    width: 100%;
+  }
+  .onb-hero-block {
+    width: 240px; height: 240px;
+    border: 4px solid var(--ink); box-shadow: 8px 8px 0 0 var(--ink);
+    display: flex; align-items: center; justify-content: center; font-size: 130px;
+  }
+  .onb-hero-block.p1 { background: var(--primary); }
+  .onb-hero-block.p2 { background: var(--blue); }
+  .onb-hero-block.p3 { background: var(--accent); }
+  .onb-content { text-align: center; width: 100%; }
+  .onb-title {
+    font-size: 30px; font-weight: 900; margin-bottom: 10px;
+    line-height: 1.1; letter-spacing: -1px; text-transform: uppercase;
+  }
+  .onb-desc { font-size: 14px; color: var(--text-2); line-height: 1.6; margin-bottom: 28px; font-weight: 500; }
+  .onb-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 24px; }
+  .onb-dot { width: 12px; height: 12px; background: var(--paper); border: 2.5px solid var(--ink); transition: all 0.3s; }
+  .onb-dot.active { background: var(--accent); width: 36px; }
+  .onb-btn {
+    width: 100%; padding: 16px; border: 3px solid var(--ink);
+    background: var(--ink); color: var(--primary);
+    font-size: 14px; font-weight: 900;
+    cursor: pointer; min-height: 48px; box-shadow: var(--shadow-hard);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .onb-btn:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 0 var(--ink); }
+  /* Side panel */
+  .panel {
+    width: 280px; background: var(--paper); border: 3px solid var(--ink);
+    padding: 20px; box-shadow: var(--shadow-hard-lg);
+    position: sticky; top: 32px; max-height: calc(100vh - 64px); overflow-y: auto;
+  }
+  .panel-title {
+    font-size: 18px; font-weight: 900; margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: -0.5px;
+  }
+  .panel-sub {
+    font-size: 11px; color: var(--text-2); margin-bottom: 16px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .panel-group { margin-bottom: 18px; }
+  .group-label {
+    font-size: 11px; font-weight: 900;
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;
+    background: var(--ink); color: var(--paper); padding: 4px 8px; display: inline-block;
+  }
+  .panel-btn {
+    width: 100%; padding: 9px 12px; background: var(--paper);
+    border: 2.5px solid var(--ink); color: var(--ink); font-size: 13px; font-weight: 700;
+    text-align: left; cursor: pointer; margin-bottom: 6px;
+  }
+  .panel-btn:hover { background: var(--bg); }
+  .panel-btn.active {
+    background: var(--primary); color: var(--ink); font-weight: 900;
+    box-shadow: 3px 3px 0 0 var(--ink);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const SCENES = {
+  onboarding: { label: "Onboarding", states: ["1·拍照", "2·洋葱皮", "3·延时"] },
+  dashboard: { label: "Dashboard", states: ["空状态", "有数据", "导出 Sheet"] },
+  camera: { label: "Camera", states: ["权限请求","未检测人脸","未对齐","已对齐","洋葱皮","倒计时","已拍照","处理中","预览/重拍","权限被拒","存储不足","摄像头被占用"] }
+};
+
+function TabBar({ active, onChange }) {
+  return (
+    <nav className="tab-bar" role="tablist" aria-label="主导航">
+      <button className={`tab-item ${active==="dashboard"?"active":""}`} role="tab" aria-selected={active==="dashboard"} onClick={()=>onChange("dashboard")}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        Home
+      </button>
+      <button className={`tab-item ${active==="camera"?"active":""}`} role="tab" aria-selected={active==="camera"} onClick={()=>onChange("camera")}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Camera
+      </button>
+    </nav>
+  );
+}
+
+function DashEmpty({ onShoot }) {
+  return (
+    <div className="dash-page">
+      <div className="dash-header">
+        <h1 className="dash-title">Daily<span className="dash-title-em">Portrait</span></h1>
+        <span style={{fontSize:11,fontWeight:800,letterSpacing:0.1,opacity:0.7}}>5/18</span>
+      </div>
+      <div className="empty-state">
+        <div className="empty-icon" aria-hidden="true">📷</div>
+        <p className="empty-text"><strong>NO RECORDS</strong>从今天开始你的肖像计划</p>
+        <button className="cta-primary" onClick={onShoot}>开始打卡 →</button>
+      </div>
+    </div>
+  );
+}
+
+function DashFilled({ onExport }) {
+  const days = ["M","T","W","T","F","S","S"];
+  return (
+    <div className="dash-page">
+      <div className="dash-header">
+        <h1 className="dash-title">DAY <span className="dash-title-em">37</span></h1>
+        <button className="export-btn" onClick={onExport}>导出 ↗</button>
+      </div>
+      <div className="bento">
+        <div className="card today-card">
+          <div className="today-thumb-placeholder" aria-hidden="true">😊</div>
+          <div className="today-info">
+            <div className="today-label">今日打卡</div>
+            <div className="today-title">5/18 周一</div>
+            <span className="today-time">09:24 ✓</span>
+          </div>
+        </div>
+        <div className="card streak-card">
+          <div className="streak-emoji" aria-hidden="true">🔥</div>
+          <div className="streak-num">37</div>
+          <div className="streak-label">Streak</div>
+        </div>
+        <div className="card week-card">
+          <div className="week-title">Week 5/7</div>
+          <div className="week-dots">
+            {days.map((d,i)=>(
+              <div key={i} className={`day-dot ${i<4?"done":""} ${i===4?"today":""}`} aria-label={`${d}${i<4?" 已打卡":i===4?" 今日":""}`}>
+                {i<4 ? "✓" : d}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="history-section">
+        <h2 className="history-title">// History</h2>
+        <div className="history-grid">
+          {Array.from({length:9}).map((_,i)=>(
+            <div key={i} className="hist-item" aria-label={`第 ${30-i} 天`}>
+              <span className="hist-date">5/{17-i}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExportSheet({ onClose }) {
+  const [progress, setProgress] = useState(0);
+  const [done, setDone] = useState(false);
+  useEffect(()=>{
+    if (done) return;
+    const t = setInterval(()=>{
+      setProgress(p => {
+        if (p >= 100) { clearInterval(t); setDone(true); return 100; }
+        return p + 4;
+      });
+    }, 80);
+    return ()=>clearInterval(t);
+  },[done]);
+  return (
+    <div className="sheet-backdrop" onClick={onClose}>
+      <div className="sheet" onClick={e=>e.stopPropagation()} role="dialog" aria-label="导出视频">
+        {!done ? (<>
+          <h2 className="sheet-title">生成中…</h2>
+          <p className="sheet-desc">37 days · 1080p · 24fps</p>
+          <div className="progress-track" role="progressbar" aria-valuenow={progress}>
+            <div className="progress-fill" style={{width:`${progress}%`}} />
+          </div>
+          <p className="progress-text">{progress}% / 还需 {Math.max(1,Math.ceil((100-progress)/20))}s</p>
+        </>) : (<>
+          <div className="sheet-done-icon" aria-hidden="true">✓</div>
+          <h2 className="sheet-title" style={{textAlign:"center"}}>DONE!</h2>
+          <p className="sheet-desc" style={{textAlign:"center"}}>已保存到相册</p>
+          <button className="cta-primary" style={{width:"100%",marginTop:16,background:"var(--ink)",color:"var(--primary)"}} onClick={onClose}>完成</button>
+        </>)}
+      </div>
+    </div>
+  );
+}
+
+function CameraScene({ state }) {
+  const [count, setCount] = useState(3);
+  useEffect(()=>{
+    if (state !== "倒计时") { setCount(3); return; }
+    if (count <= 1) return;
+    const t = setTimeout(()=>setCount(c=>c-1), 800);
+    return ()=>clearTimeout(t);
+  },[state, count]);
+
+  if (state === "权限请求") {
+    return (<div className="cam-page">
+      <div className="perm-card">
+        <div className="perm-icon" aria-hidden="true">📷</div>
+        <h2 className="perm-title">允许相机</h2>
+        <p className="perm-desc">DAILYPORTRAIT 需要相机权限来记录你每日的肖像</p>
+        <button className="cta-primary" style={{width:"100%"}}>允许访问</button>
+      </div>
+    </div>);
+  }
+  if (state === "权限被拒") {
+    return (<div className="cam-page">
+      <div className="perm-card">
+        <div className="perm-icon" aria-hidden="true">🔒</div>
+        <h2 className="perm-title">权限被拒</h2>
+        <p className="perm-desc">前往「设置 → DailyPortrait」<br/>开启相机权限</p>
+        <button className="cta-primary" style={{width:"100%"}}>打开设置</button>
+      </div>
+    </div>);
+  }
+  if (state === "摄像头被占用") {
+    return (<div className="cam-page">
+      <div className="perm-card">
+        <div className="perm-icon" aria-hidden="true">⚠️</div>
+        <h2 className="perm-title">摄像头被占用</h2>
+        <p className="perm-desc">请关闭其他正在使用相机的应用<br/>例如 FaceTime / 微信视频</p>
+        <button className="cta-primary" style={{width:"100%"}}>重试</button>
+      </div>
+    </div>);
+  }
+
+  const ringClass = state==="未对齐" ? "misaligned" : state==="已对齐" ? "aligned" : "";
+  return (<div className="cam-page">
+    <div className="cam-viewfinder" aria-hidden="true">
+      {state !== "未检测人脸" && <span className="face-mockup">👤</span>}
+    </div>
+    <div className="cam-topbar">
+      <button className="cam-iconbtn" aria-label="关闭">✕</button>
+      <button className="cam-iconbtn" aria-label="闪光灯">⚡</button>
+    </div>
+    {state === "已拍照" && <div className="thumb-corner" aria-hidden="true">😊</div>}
+    {state === "洋葱皮" && (<>
+      <div className="onion-overlay" aria-hidden="true" />
+      <div className="onion-control">
+        <div className="onion-row">
+          <span className="onion-label">// 洋葱皮</span>
+          <span className="onion-value">60%</span>
+        </div>
+        <div className="slider-track"><div className="slider-fill"/><div className="slider-thumb"/></div>
+      </div>
+    </>)}
+    {(state === "未检测人脸" || state === "未对齐" || state === "已对齐" || state === "洋葱皮") && (
+      <>
+        <div className={`guide-frame ${ringClass}`} aria-hidden="true">
+          {state === "未对齐" && <div className="ring-icon red">✗ MISALIGNED</div>}
+          {state === "已对齐" && <div className="ring-icon green">✓ ALIGNED</div>}
+        </div>
+        {state === "未检测人脸" && (
+          <div className="guide-corners" aria-hidden="true">
+            <div className="guide-corner tl"/><div className="guide-corner tr"/>
+            <div className="guide-corner bl"/><div className="guide-corner br"/>
+          </div>
+        )}
+      </>
+    )}
+    <div className="shutter-row">
+      <button className="switch-btn" aria-label="切换摄像头">↻</button>
+      <button className="shutter" aria-label="拍照"></button>
+      <button className="switch-btn" aria-label="计时器">⏱</button>
+    </div>
+    {state === "倒计时" && (
+      <div className="countdown-overlay">
+        <div className="countdown-num" aria-live="assertive">{count}</div>
+      </div>
+    )}
+    {state === "已拍照" && <div className="flash-white" aria-hidden="true" />}
+    {state === "处理中" && (
+      <div className="processing-overlay" role="status" aria-live="polite">
+        <div className="spinner-blocks" aria-hidden="true"><span/><span/><span/></div>
+        <span className="processing-text">PROCESSING…</span>
+      </div>
+    )}
+    {state === "预览/重拍" && (
+      <div className="preview-page">
+        <div className="preview-img" aria-hidden="true">😊</div>
+        <div className="preview-actions">
+          <button className="preview-btn retake">↻ 重拍</button>
+          <button className="preview-btn use">使用 ✓</button>
+        </div>
+      </div>
+    )}
+    {state === "存储不足" && (
+      <div className="snackbar" role="alert">
+        <span className="snackbar-text">⚠ 存储不足</span>
+        <button className="snackbar-btn">清理</button>
+      </div>
+    )}
+  </div>);
+}
+
+function Onboarding({ page, onPage, onDone }) {
+  const pages = [
+    { emoji: "📸", cls: "p1", title: "DAILY SHOT", desc: "在固定时间留下一张肖像\n积累属于你的成长档案" },
+    { emoji: "👻", cls: "p2", title: "ALIGN EASY", desc: "上一张照片半透明叠加\n保持构图一致超简单" },
+    { emoji: "🎬", cls: "p3", title: "TIMELAPSE", desc: "365 天的坚持\n变成几十秒的动人短片" }
+  ];
+  const p = pages[page];
+  return (
+    <div className="onb-page">
+      <button className="onb-skip" onClick={onDone}>跳过</button>
+      <div className="onb-hero">
+        <div className={`onb-hero-block ${p.cls}`} aria-hidden="true">{p.emoji}</div>
+      </div>
+      <div className="onb-content">
+        <h1 className="onb-title">{p.title}</h1>
+        <p className="onb-desc" style={{whiteSpace:"pre-line"}}>{p.desc}</p>
+        <div className="onb-dots" role="tablist" aria-label="引导页">
+          {pages.map((_,i)=>(
+            <div key={i} className={`onb-dot ${i===page?"active":""}`} role="tab" aria-current={i===page?"true":"false"}/>
+          ))}
+        </div>
+        <button className="onb-btn" onClick={()=> page < 2 ? onPage(page+1) : onDone()}>
+          {page < 2 ? "继续 →" : "开始 ✓"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [scene, setScene] = useState("onboarding");
+  const [onbPage, setOnbPage] = useState(0);
+  const [dashState, setDashState] = useState("有数据");
+  const [showSheet, setShowSheet] = useState(false);
+  const [camState, setCamState] = useState("已对齐");
+
+  useEffect(()=>{
+    if (camState !== "已拍照") return;
+    const t = setTimeout(()=>setCamState("处理中"), 600);
+    return ()=>clearTimeout(t);
+  },[camState]);
+  useEffect(()=>{
+    if (camState !== "处理中") return;
+    const t = setTimeout(()=>setCamState("预览/重拍"), 1200);
+    return ()=>clearTimeout(t);
+  },[camState]);
+
+  const handleDashChange = (s) => {
+    setDashState(s);
+    setShowSheet(s === "导出 Sheet");
+  };
+
+  return (<>
+    <div className="phone" role="presentation">
+      <div className="notch" />
+      <div className="screen">
+        {scene === "onboarding" && <Onboarding page={onbPage} onPage={setOnbPage} onDone={()=>setScene("dashboard")}/>}
+        {scene === "dashboard" && (<>
+          {dashState === "空状态" && <DashEmpty onShoot={()=>setScene("camera")} />}
+          {(dashState === "有数据" || dashState === "导出 Sheet") && <DashFilled onExport={()=>{setDashState("导出 Sheet");setShowSheet(true);}} />}
+          {showSheet && <ExportSheet onClose={()=>{setShowSheet(false);setDashState("有数据");}}/>}
+          <TabBar active="dashboard" onChange={s => setScene(s)}/>
+        </>)}
+        {scene === "camera" && (<>
+          <CameraScene state={camState} />
+          <TabBar active="camera" onChange={s => setScene(s)}/>
+        </>)}
+      </div>
+    </div>
+
+    <aside className="panel" aria-label="设计师工具面板">
+      <div className="panel-title">▣ NEO BRUTALISM</div>
+      <div className="panel-sub">DailyPortrait · v1.1</div>
+
+      <div className="panel-group">
+        <div className="group-label">SCENE</div>
+        {Object.entries(SCENES).map(([k, v])=>(
+          <button key={k} className={`panel-btn ${scene===k?"active":""}`} onClick={()=>setScene(k)}>{v.label}</button>
+        ))}
+      </div>
+
+      {scene === "onboarding" && (
+        <div className="panel-group">
+          <div className="group-label">ONBOARDING</div>
+          {SCENES.onboarding.states.map((s,i)=>(
+            <button key={i} className={`panel-btn ${onbPage===i?"active":""}`} onClick={()=>setOnbPage(i)}>{s}</button>
+          ))}
+        </div>
+      )}
+
+      {scene === "dashboard" && (
+        <div className="panel-group">
+          <div className="group-label">DASHBOARD</div>
+          {SCENES.dashboard.states.map((s,i)=>(
+            <button key={i} className={`panel-btn ${dashState===s?"active":""}`} onClick={()=>handleDashChange(s)}>{s}</button>
+          ))}
+        </div>
+      )}
+
+      {scene === "camera" && (
+        <div className="panel-group">
+          <div className="group-label">CAMERA</div>
+          {SCENES.camera.states.map((s,i)=>(
+            <button key={i} className={`panel-btn ${camState===s?"active":""}`} onClick={()=>setCamState(s)}>{s}</button>
+          ))}
+        </div>
+      )}
+    </aside>
+  </>);
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

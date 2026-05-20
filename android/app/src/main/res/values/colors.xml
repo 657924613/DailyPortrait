@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        XML 资源仅承担启动闪屏背景的角色，与 Compose Token (DPColors) 保持完全一致。
+        Compose UI 永远从 MaterialTheme.colorScheme 读色，禁止引用此处。
+    -->
+    <color name="dp_surface">#F4F1EC</color>
+    <color name="dp_primary">#FF8A5B</color>
+</resources>

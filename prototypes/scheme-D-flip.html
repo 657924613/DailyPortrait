@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方案D · 翻页揭示 (Page Flip)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg: #F8F5F0;
+  --surface: #FFFFFF;
+  --primary: #B85A3A;
+  --primary-soft: #F5E6DE;
+  --ink: #2C2520;
+  --ink2: #7A6E65;
+  --ink3: #B5ADA5;
+  --accent2: #3A7A5A;
+  --accent3: #3A5A7A;
+  --radius: 24px;
+  --font: -apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif;
+}
+body { font-family: var(--font); background: #e8e4de; overflow-x: hidden; }
+.phone { width: 390px; height: 844px; margin: 20px auto; border-radius: 44px; overflow: hidden; position: relative; background: var(--bg); box-shadow: 0 20px 60px rgba(0,0,0,0.12); perspective: 1200px; }
+
+/* ===== Onboarding - Book/Journal Style ===== */
+.onboarding {
+  position: absolute; inset: 0; z-index: 100; background: var(--bg);
+  transform-origin: right center;
+  transition: transform 0.8s cubic-bezier(0.4,0,0.2,1), opacity 0.4s 0.4s;
+}
+.onboarding.exit { transform: rotateY(-90deg); opacity: 0; }
+
+.journal { height: 100%; display: flex; flex-direction: column; padding: 56px 28px 40px; }
+.j-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+.j-logo { font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: 1px; }
+.j-skip { font-size: 13px; color: var(--ink2); cursor: pointer; padding: 8px; }
+
+.j-content { flex: 1; position: relative; }
+.j-page { position: absolute; inset: 0; display: flex; flex-direction: column; opacity: 0; transform: translateY(20px); transition: all 0.5s cubic-bezier(0,0,0.2,1); pointer-events: none; }
+.j-page.active { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+.j-number { font-size: 72px; font-weight: 800; color: var(--ink); opacity: 0.06; position: absolute; top: -10px; left: -5px; }
+.j-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; margin-bottom: 20px; margin-top: 30px; }
+.j-title { font-size: 30px; font-weight: 700; color: var(--ink); line-height: 1.35; margin-bottom: 16px; }
+.j-desc { font-size: 15px; color: var(--ink2); line-height: 1.8; margin-bottom: 32px; }
+
+.j-visual { flex: 1; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; min-height: 200px; }
+.j-visual .deco-line { position: absolute; width: 60%; height: 1px; opacity: 0.15; }
+.j-visual .main-emoji { font-size: 80px; animation: gentle-bob 5s ease-in-out infinite; }
+@keyframes gentle-bob { 0%,100%{ transform: translateY(0) rotate(0deg); } 25%{ transform: translateY(-8px) rotate(2deg); } 75%{ transform: translateY(4px) rotate(-1deg); } }
+
+.j-footer { display: flex; flex-direction: column; align-items: center; gap: 20px; padding-top: 24px; }
+.j-progress { display: flex; gap: 12px; align-items: center; }
+.j-prog-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--ink3); transition: all 0.3s; }
+.j-prog-dot.done { background: var(--primary); border-color: var(--primary); }
+.j-prog-dot.current { border-color: var(--primary); transform: scale(1.3); }
+.j-prog-line { width: 24px; height: 2px; background: var(--ink3); }
+
+.j-btn { width: 100%; height: 58px; border-radius: 29px; border: 2px solid var(--ink); background: transparent; font-size: 16px; font-weight: 600; color: var(--ink); cursor: pointer; transition: all 0.3s; }
+.j-btn:hover { background: var(--ink); color: var(--bg); }
+.j-btn.final { border-color: var(--primary); background: var(--primary); color: #fff; }
+.j-btn:active { transform: scale(0.97); }
+
+/* ===== Dashboard ===== */
+.dashboard { position: absolute; inset: 0; z-index: 50; padding: 56px 20px 20px; overflow-y: auto; }
+.dash-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; }
+.dash-day { font-size: 11px; color: var(--ink2); text-transform: uppercase; letter-spacing: 2px; }
+.dash-h1 { font-size: 32px; font-weight: 800; color: var(--ink); margin-top: 4px; }
+.dash-btns { display: flex; gap: 8px; }
+.dash-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+.card-hero { background: var(--surface); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
+.card-hero-img { width: 100%; aspect-ratio: 1.5; background: linear-gradient(135deg, var(--primary-soft), #F0E8E0); display: flex; align-items: center; justify-content: center; font-size: 48px; }
+.card-hero-bar { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+.card-hero-date { font-size: 16px; font-weight: 600; color: var(--ink); }
+.card-hero-cta { font-size: 13px; color: var(--primary); font-weight: 500; cursor: pointer; }
+
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.stat-box { background: var(--surface); border-radius: 20px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+.stat-box-label { font-size: 11px; color: var(--ink2); margin-bottom: 8px; }
+.stat-box-num { font-size: 28px; font-weight: 700; color: var(--ink); }
+
+.archive-head { display: flex; justify-content: space-between; margin: 20px 0 12px; }
+.archive-h { font-size: 15px; font-weight: 600; color: var(--ink); }
+.archive-more { font-size: 12px; color: var(--primary); }
+.archive-g { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.archive-item { aspect-ratio: 1; border-radius: 14px; background: var(--primary-soft); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <!-- Dashboard -->
+  <div class="dashboard">
+    <div class="dash-top">
+      <div><div class="dash-day">今天下午</div><div class="dash-h1">第 15 天</div></div>
+      <div class="dash-btns"><div class="dash-btn">⚙️</div><div class="dash-btn">▶</div></div>
+    </div>
+    <div class="card-hero">
+      <div class="card-hero-img">📷</div>
+      <div class="card-hero-bar"><div class="card-hero-date">5月19日</div><div class="card-hero-cta">去拍照 →</div></div>
+    </div>
+    <div class="row-2">
+      <div class="stat-box"><div class="stat-box-label">连续打卡</div><div class="stat-box-num">15天</div></div>
+      <div class="stat-box"><div class="stat-box-label">本周进度</div><div class="stat-box-num">5/7</div></div>
+    </div>
+    <div class="archive-head"><div class="archive-h">回忆相册 · 42</div><div class="archive-more">统计</div></div>
+    <div class="archive-g">
+      <div class="archive-item"></div><div class="archive-item"></div><div class="archive-item"></div>
+      <div class="archive-item"></div><div class="archive-item"></div><div class="archive-item"></div>
+    </div>
+  </div>
+
+  <!-- Onboarding -->
+  <div class="onboarding" id="onboarding">
+    <div class="journal">
+      <div class="j-header">
+        <div class="j-logo">每日肖像</div>
+        <span class="j-skip" onclick="finish()">跳过</span>
+      </div>
+      <div class="j-content">
+        <div class="j-page active" id="jp0">
+          <div class="j-number">01</div>
+          <span class="j-badge" style="background:var(--primary-soft);color:var(--primary)">📷 记录</span>
+          <div class="j-title">每天一张<br>属于你的肖像</div>
+          <div class="j-desc">在固定时间记录此刻的自己<br>累积属于你的视觉档案</div>
+          <div class="j-visual" style="background:var(--primary-soft)">
+            <div class="main-emoji">📷</div>
+          </div>
+        </div>
+        <div class="j-page" id="jp1">
+          <div class="j-number">02</div>
+          <span class="j-badge" style="background:#E8F5E9;color:var(--accent2)">🧅 对齐</span>
+          <div class="j-title">洋葱皮叠加<br>构图始终一致</div>
+          <div class="j-desc">上一张照片半透明叠加在取景框<br>帮你保持角度和位置稳定</div>
+          <div class="j-visual" style="background:#E8F5E9">
+            <div class="main-emoji">🧅</div>
+          </div>
+        </div>
+        <div class="j-page" id="jp2">
+          <div class="j-number">03</div>
+          <span class="j-badge" style="background:#E3F2FD;color:var(--accent3)">🎬 回顾</span>
+          <div class="j-title">时间的痕迹<br>变成动人短片</div>
+          <div class="j-desc">365 天的坚持<br>自动合成几十秒延时视频</div>
+          <div class="j-visual" style="background:#E3F2FD">
+            <div class="main-emoji">🎬</div>
+          </div>
+        </div>
+      </div>
+      <div class="j-footer">
+        <div class="j-progress">
+          <div class="j-prog-dot current"></div>
+          <div class="j-prog-line"></div>
+          <div class="j-prog-dot"></div>
+          <div class="j-prog-line"></div>
+          <div class="j-prog-dot"></div>
+        </div>
+        <button class="j-btn" id="jbtn" onclick="next()">下一步</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;margin:20px;color:#666;font-size:14px;">
+  <strong>方案D · 翻页揭示</strong> (日记本风格)<br>
+  点击"开始记录"时，整个 Onboarding 像书页一样从右向左翻转 90°，<br>
+  露出背后的 Dashboard，仿佛翻开日记本的第一页。
+</p>
+
+<script>
+let cur = 0;
+const jps = document.querySelectorAll('.j-page');
+const dots = document.querySelectorAll('.j-prog-dot');
+const jbtn = document.getElementById('jbtn');
+
+function show(i) {
+  jps.forEach((p,idx) => p.classList.toggle('active', idx===i));
+  dots.forEach((d,idx) => {
+    d.classList.remove('done','current');
+    if (idx < i) d.classList.add('done');
+    else if (idx === i) d.classList.add('current');
+  });
+  if (i === jps.length-1) {
+    jbtn.textContent = '开始记录';
+    jbtn.classList.add('final');
+  } else {
+    jbtn.textContent = '下一步';
+    jbtn.classList.remove('final');
+  }
+}
+function next() {
+  if (cur < jps.length-1) { cur++; show(cur); }
+  else finish();
+}
+function finish() {
+  document.getElementById('onboarding').classList.add('exit');
+}
+</script>
+</body>
+</html>

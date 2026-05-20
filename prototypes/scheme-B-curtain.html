@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方案B · 幕布揭开 (Curtain Reveal)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg: #0F0F0F;
+  --surface: #1A1A1A;
+  --card: #242424;
+  --primary: #E8845C;
+  --text: #F5F2EC;
+  --text2: #9B948B;
+  --text3: #5A5550;
+  --green: #6BAE6F;
+  --radius: 24px;
+  --font: -apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif;
+}
+body { font-family: var(--font); background: #000; overflow-x: hidden; }
+.phone { width: 390px; height: 844px; margin: 20px auto; border-radius: 44px; overflow: hidden; position: relative; background: var(--bg); box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+
+/* ===== Onboarding - Dark Cinematic ===== */
+.onboarding { position: absolute; inset: 0; z-index: 100; background: var(--bg); }
+.onboarding .curtain-left, .onboarding .curtain-right {
+  position: absolute; top: 0; bottom: 0; width: 50%; background: var(--bg); z-index: 200;
+  transition: transform 1s cubic-bezier(0.7, 0, 0.3, 1);
+}
+.onboarding .curtain-left { left: 0; transform-origin: left; }
+.onboarding .curtain-right { right: 0; transform-origin: right; }
+.onboarding.exit .curtain-left { transform: translateX(-100%); }
+.onboarding.exit .curtain-right { transform: translateX(100%); }
+.onboarding .light-beam {
+  position: absolute; inset: 0; z-index: 150;
+  background: radial-gradient(ellipse at center, rgba(232,132,92,0.3) 0%, transparent 70%);
+  opacity: 0; transition: opacity 0.6s 0.3s;
+}
+.onboarding.exit .light-beam { opacity: 1; }
+
+.ob-content { position: relative; z-index: 250; height: 100%; display: flex; flex-direction: column; }
+.ob-skip { position: absolute; top: 56px; right: 20px; color: var(--text2); font-size: 14px; cursor: pointer; }
+.ob-pages { flex: 1; position: relative; }
+.ob-page { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 36px; opacity: 0; transition: all 0.6s; pointer-events: none; }
+.ob-page.active { opacity: 1; pointer-events: auto; }
+
+.cinema-icon { width: 160px; height: 160px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 56px; position: relative; }
+.cinema-icon::before { content: ''; position: absolute; inset: -20px; border-radius: 50%; border: 1px solid rgba(232,132,92,0.2); animation: ring-pulse 2.5s ease-in-out infinite; }
+@keyframes ring-pulse { 0%,100%{ transform:scale(1); opacity:0.5; } 50%{ transform:scale(1.1); opacity:0; } }
+.cinema-icon .emoji { font-size: 56px; }
+
+.ob-step { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 20px; }
+.ob-title { font-size: 32px; font-weight: 700; line-height: 1.3; text-align: center; color: var(--text); margin-bottom: 20px; }
+.ob-desc { font-size: 15px; line-height: 1.8; text-align: center; color: var(--text2); }
+
+.ob-bottom { padding: 0 36px 56px; display: flex; flex-direction: column; align-items: center; gap: 28px; }
+.ob-dots { display: flex; gap: 10px; }
+.ob-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); transition: all 0.3s; }
+.ob-dot.active { background: var(--primary); box-shadow: 0 0 12px rgba(232,132,92,0.5); }
+.ob-btn { width: 100%; height: 60px; border-radius: 30px; border: none; font-size: 17px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.ob-btn-default { background: var(--text); color: var(--bg); }
+.ob-btn-glow { background: var(--primary); color: #fff; box-shadow: 0 8px 32px rgba(232,132,92,0.4); }
+.ob-btn:active { transform: scale(0.96); }
+
+/* ===== Dashboard Dark ===== */
+.dashboard { position: absolute; inset: 0; padding: 56px 20px 20px; overflow-y: auto; z-index: 50; }
+.dh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.dh-left .greeting { font-size: 13px; color: var(--text2); }
+.dh-left .title { font-size: 26px; font-weight: 700; color: var(--text); margin-top: 4px; }
+.dh-right { display: flex; gap: 10px; }
+.dh-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--card); display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
+
+.hero-card { background: var(--card); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
+.hero-img { width: 100%; aspect-ratio: 1.4; background: linear-gradient(135deg, #2a2520, #1a1816); display: flex; align-items: center; justify-content: center; font-size: 40px; }
+.hero-bottom { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; }
+.hero-label { font-size: 11px; color: var(--text2); }
+.hero-date { font-size: 18px; font-weight: 600; color: var(--text); margin-top: 2px; }
+.hero-cta { font-size: 14px; color: var(--primary); font-weight: 500; }
+
+.mini-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.mini-card { background: var(--card); border-radius: 20px; padding: 18px; aspect-ratio: 1.1; display: flex; flex-direction: column; justify-content: space-between; }
+.mc-label { font-size: 11px; color: var(--text2); }
+.mc-value { font-size: 32px; font-weight: 700; color: var(--text); }
+.mc-unit { font-size: 11px; color: var(--text2); }
+.mc-dots { display: flex; gap: 4px; margin-top: 8px; }
+.mc-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+.section-head { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 12px; }
+.section-title { font-size: 16px; font-weight: 600; color: var(--text); }
+.section-link { font-size: 12px; color: var(--primary); }
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.grid-cell { aspect-ratio: 1; border-radius: 14px; background: var(--card); position: relative; overflow: hidden; }
+.grid-cell .date { position: absolute; bottom: 8px; left: 8px; font-size: 10px; color: rgba(255,255,255,0.7); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <!-- Dashboard (behind) -->
+  <div class="dashboard">
+    <div class="dh">
+      <div class="dh-left"><div class="greeting">今天下午</div><div class="title">第 15 天</div></div>
+      <div class="dh-right"><div class="dh-btn">⚙️</div><div class="dh-btn" style="background:var(--primary)">▶</div></div>
+    </div>
+    <div class="hero-card">
+      <div class="hero-img">📷</div>
+      <div class="hero-bottom">
+        <div><div class="hero-label">今日</div><div class="hero-date">5月19日</div></div>
+        <div class="hero-cta">去拍照</div>
+      </div>
+    </div>
+    <div class="mini-cards">
+      <div class="mini-card"><div class="mc-label">连续</div><div><div class="mc-value">15</div><div class="mc-unit">天</div></div></div>
+      <div class="mini-card"><div class="mc-label">本周</div><div><div class="mc-value">5</div><div class="mc-unit">/ 7</div><div class="mc-dots"><span class="mc-dot" style="background:var(--primary)"></span><span class="mc-dot" style="background:var(--primary)"></span><span class="mc-dot" style="background:var(--primary)"></span><span class="mc-dot" style="background:var(--primary)"></span><span class="mc-dot" style="background:var(--primary)"></span><span class="mc-dot" style="background:var(--text3)"></span><span class="mc-dot" style="background:var(--text3)"></span></div></div></div>
+    </div>
+    <div class="section-head"><div class="section-title">回忆相册</div><div class="section-link">统计</div></div>
+    <div class="grid-3">
+      <div class="grid-cell"><div class="date">5.18</div></div>
+      <div class="grid-cell"><div class="date">5.17</div></div>
+      <div class="grid-cell"><div class="date">5.16</div></div>
+      <div class="grid-cell"><div class="date">5.15</div></div>
+      <div class="grid-cell"><div class="date">5.14</div></div>
+      <div class="grid-cell"><div class="date">5.13</div></div>
+    </div>
+  </div>
+
+  <!-- Onboarding (on top) -->
+  <div class="onboarding" id="onboarding">
+    <div class="curtain-left"></div>
+    <div class="curtain-right"></div>
+    <div class="light-beam"></div>
+    <div class="ob-content">
+      <span class="ob-skip" onclick="finish()">跳过</span>
+      <div class="ob-pages">
+        <div class="ob-page active" id="p0">
+          <div class="cinema-icon" style="background:rgba(232,132,92,0.08)"><span class="emoji">📷</span></div>
+          <div class="ob-step" style="color:var(--primary)">第一步 · 记录</div>
+          <div class="ob-title">每天一张<br>属于你的肖像</div>
+          <div class="ob-desc">在固定时间记录此刻的自己<br>累积属于你的视觉档案</div>
+        </div>
+        <div class="ob-page" id="p1">
+          <div class="cinema-icon" style="background:rgba(107,174,111,0.08)"><span class="emoji">🧅</span></div>
+          <div class="ob-step" style="color:var(--green)">第二步 · 对齐</div>
+          <div class="ob-title">洋葱皮叠加<br>构图始终一致</div>
+          <div class="ob-desc">上一张照片半透明叠加在取景框<br>帮你保持角度和位置稳定</div>
+        </div>
+        <div class="ob-page" id="p2">
+          <div class="cinema-icon" style="background:rgba(91,126,194,0.08)"><span class="emoji">🎬</span></div>
+          <div class="ob-step" style="color:var(--primary)">第三步 · 回顾</div>
+          <div class="ob-title">时间的痕迹<br>变成动人短片</div>
+          <div class="ob-desc">365 天的坚持<br>自动合成几十秒延时视频</div>
+        </div>
+      </div>
+      <div class="ob-bottom">
+        <div class="ob-dots"><div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
+        <button class="ob-btn ob-btn-default" id="btn" onclick="next()">下一步</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;margin:20px;color:#999;font-size:14px;">
+  <strong>方案B · 幕布揭开</strong> (暗色主题)<br>
+  点击"开始记录"时，Onboarding 像电影幕布从中间向两侧拉开，<br>
+  中央透出暖橘色光束，Dashboard 从幕后显现。
+</p>
+
+<script>
+let cur = 0;
+const ps = document.querySelectorAll('.ob-page');
+const ds = document.querySelectorAll('.ob-dot');
+const btn = document.getElementById('btn');
+
+function show(i) {
+  ps.forEach((p,idx) => p.classList.toggle('active', idx===i));
+  ds.forEach((d,idx) => d.classList.toggle('active', idx===i));
+  btn.textContent = i === ps.length-1 ? '开始记录' : '下一步';
+  btn.className = i === ps.length-1 ? 'ob-btn ob-btn-glow' : 'ob-btn ob-btn-default';
+}
+function next() {
+  if (cur < ps.length-1) { cur++; show(cur); }
+  else finish();
+}
+function finish() {
+  document.getElementById('onboarding').classList.add('exit');
+  // Hide content after curtains open
+  setTimeout(() => {
+    document.querySelector('.ob-content').style.opacity = '0';
+  }, 200);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.kiro/
+.agents/
+
+# Android (详细规则在 android/.gitignore)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/keystore/
+android/keystore.properties
+android/sentry.properties
+*.jks
+*.keystore
+
+# Node (如果有 prototype 相关)
+node_modules/
+
+# Crash logs
+crash*.log

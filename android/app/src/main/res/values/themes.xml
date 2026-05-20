@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+        Compose 项目的主题实质由 Compose 自身的 DailyPortraitTheme 接管。
+        此处的 XML Theme 仅在启动闪屏 / Activity attribute 阶段生效。
+        使用系统内置 Material 主题作为父类，避免引入额外的 Material XML 依赖。
+    -->
+    <style name="Theme.DailyPortrait" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- 背景色与 Compose 主题一致，避免冷启动闪烁 -->
+        <item name="android:windowBackground">@color/dp_surface</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:enforceNavigationBarContrast" tools:targetApi="q">false</item>
+    </style>
+</resources>

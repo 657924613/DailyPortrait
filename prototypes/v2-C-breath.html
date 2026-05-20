@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方案C · 呼吸仪式 (Breathing Ritual)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, 'PingFang SC', sans-serif; background: #C8C2B8; }
+.phone { width: 390px; height: 844px; margin: 20px auto; border-radius: 44px; overflow: hidden; position: relative; background: #1E1C19; box-shadow: 0 24px 80px rgba(0,0,0,0.2); }
+
+/*
+  设计理念：呼吸仪式
+  
+  核心想法：每天拍照是一种"仪式"。
+  Onboarding 用极简的呼吸动画引导用户进入"仪式感"状态。
+  
+  整个引导只有一个中心圆环在呼吸（扩大/缩小），
+  文字极少，每次呼吸切换一句话。
+  像冥想 App 的引导，让用户慢下来。
+  
+  最后"开始"时，圆环扩大到充满整个屏幕，
+  然后"破裂"成 Dashboard 的各个卡片元素。
+  
+  Dashboard 用深色暖调，照片是唯一的亮色来源。
+  极简，让照片本身成为主角。
+*/
+
+.ob { position: absolute; inset: 0; z-index: 100; background: #1E1C19; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.ob .ink-drop { position:absolute; top:50%; left:50%; width:0; height:0; border-radius:50%; background:#C8B496; z-index:300; transform:translate(-50%,-50%); transition: width 0.8s cubic-bezier(0.4,0,0.2,1), height 0.8s cubic-bezier(0.4,0,0.2,1), opacity 0.4s 0.6s; pointer-events:none; }
+.ob.exit .ink-drop { width:200vw; height:200vw; opacity:0; }
+.ob.exit .ob-content { opacity: 0; transition: opacity 0.2s; }
+.ob.gone { display: none; }
+
+.ob-content { display: flex; flex-direction: column; align-items: center; z-index: 10; }
+.ob-skip { position: absolute; top: 56px; right: 24px; font-size: 13px; color: #6A6460; cursor: pointer; z-index: 20; }
+
+/* 呼吸圆环 */
+.breath-ring { width: 200px; height: 200px; border-radius: 50%; border: 1.5px solid rgba(200,180,150,0.3); display: flex; align-items: center; justify-content: center; animation: breathe 4s ease-in-out infinite; margin-bottom: 56px; position: relative; }
+@keyframes breathe { 0%,100%{ transform: scale(1); border-color: rgba(200,180,150,0.2); } 50%{ transform: scale(1.08); border-color: rgba(200,180,150,0.5); } }
+.breath-ring::before { content: ''; position: absolute; inset: 20px; border-radius: 50%; border: 1px solid rgba(200,180,150,0.15); animation: breathe 4s ease-in-out infinite 0.5s; }
+.breath-inner { width: 80px; height: 80px; border-radius: 50%; background: rgba(200,180,150,0.06); display: flex; align-items: center; justify-content: center; }
+.breath-dot { width: 8px; height: 8px; border-radius: 50%; background: #C8B496; animation: glow 4s ease-in-out infinite; }
+@keyframes glow { 0%,100%{ opacity: 0.4; box-shadow: none; } 50%{ opacity: 1; box-shadow: 0 0 20px rgba(200,180,150,0.5); } }
+
+.ob-text { text-align: center; opacity: 0; transform: translateY(10px); transition: all 0.8s cubic-bezier(0,0,0.2,1); }
+.ob-text.show { opacity: 1; transform: translateY(0); }
+.ob-line1 { font-size: 24px; font-weight: 300; color: #E8E0D4; letter-spacing: 2px; margin-bottom: 12px; }
+.ob-line2 { font-size: 14px; color: #8A7E72; line-height: 1.8; }
+
+.ob-bottom { position: absolute; bottom: 48px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 16px; z-index: 10; }
+.ob-step-dots { display: flex; gap: 12px; }
+.ob-sd { width: 4px; height: 4px; border-radius: 50%; background: #4A4540; transition: all 0.5s; }
+.ob-sd.active { background: #C8B496; width: 16px; border-radius: 2px; }
+.ob-next { width: 200px; height: 48px; border-radius: 24px; border: 1px solid #4A4540; background: transparent; color: #C8B496; font-size: 14px; cursor: pointer; transition: all 0.4s; letter-spacing: 1px; }
+.ob-next.final { border-color: #C8B496; background: rgba(200,180,150,0.1); }
+.ob-next:active { transform: scale(0.96); }
+
+/* ===== Dashboard - Dark Warm ===== */
+.dash { position: absolute; inset: 0; z-index: 50; background: #1E1C19; padding: 56px 20px 20px; overflow-y: auto; }
+.dash-top { margin-bottom: 28px; }
+.dash-sub { font-size: 11px; color: #6A6460; letter-spacing: 2px; }
+.dash-h { font-size: 32px; font-weight: 200; color: #E8E0D4; margin-top: 8px; letter-spacing: 1px; }
+.dash-h span { font-weight: 600; color: #C8B496; }
+
+.dash-today { background: #2A2622; border-radius: 20px; padding: 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px; cursor: pointer; border: 1px solid #3A3530; }
+.dt-ring { width: 60px; height: 60px; border-radius: 50%; border: 1.5px solid #C8B496; display: flex; align-items: center; justify-content: center; animation: breathe 4s ease-in-out infinite; }
+.dt-ring-inner { font-size: 22px; }
+.dt-info { flex: 1; }
+.dt-label { font-size: 11px; color: #6A6460; }
+.dt-main { font-size: 16px; color: #E8E0D4; margin-top: 4px; font-weight: 300; }
+.dt-streak { font-size: 12px; color: #C8B496; margin-top: 4px; }
+
+.dash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.dash-card { background: #2A2622; border-radius: 16px; padding: 20px; border: 1px solid #3A3530; }
+.dc-label { font-size: 10px; color: #6A6460; letter-spacing: 1px; }
+.dc-val { font-size: 28px; font-weight: 200; color: #E8E0D4; margin-top: 8px; }
+.dc-val span { font-weight: 600; color: #C8B496; }
+
+.dash-grid-title { font-size: 10px; color: #6A6460; letter-spacing: 2px; margin-bottom: 12px; }
+.dash-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+.dg-cell { aspect-ratio: 1; border-radius: 12px; background: #2A2622; border: 1px solid #3A3530; position: relative; overflow: hidden; }
+.dg-cell .dg-date { position: absolute; bottom: 6px; left: 8px; font-size: 9px; color: #6A6460; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <!-- Dashboard -->
+  <div class="dash">
+    <div class="dash-top">
+      <div class="dash-sub">2026.05.19</div>
+      <div class="dash-h">第 <span>15</span> 天</div>
+    </div>
+    <div class="dash-today">
+      <div class="dt-ring"><div class="dt-ring-inner">📷</div></div>
+      <div class="dt-info">
+        <div class="dt-label">今日</div>
+        <div class="dt-main">等待你的记录</div>
+        <div class="dt-streak">连续 15 天</div>
+      </div>
+    </div>
+    <div class="dash-row">
+      <div class="dash-card"><div class="dc-label">连续</div><div class="dc-val"><span>15</span> 天</div></div>
+      <div class="dash-card"><div class="dc-label">本周</div><div class="dc-val"><span>5</span> / 7</div></div>
+    </div>
+    <div class="dash-grid-title">回忆</div>
+    <div class="dash-grid">
+      <div class="dg-cell"><div class="dg-date">5.18</div></div>
+      <div class="dg-cell"><div class="dg-date">5.17</div></div>
+      <div class="dg-cell"><div class="dg-date">5.16</div></div>
+      <div class="dg-cell"><div class="dg-date">5.15</div></div>
+      <div class="dg-cell"><div class="dg-date">5.14</div></div>
+      <div class="dg-cell"><div class="dg-date">5.13</div></div>
+    </div>
+  </div>
+
+  <!-- Onboarding -->
+  <div class="ob" id="ob">
+    <div class="ink-drop"></div>
+    <span class="ob-skip" onclick="finish()">跳过</span>
+    <div class="ob-content">
+      <div class="breath-ring">
+        <div class="breath-inner"><div class="breath-dot"></div></div>
+      </div>
+      <div class="ob-text show" id="obText">
+        <div class="ob-line1" id="line1">每天一张</div>
+        <div class="ob-line2" id="line2">记录此刻的你<br>不需要完美，只需要真实</div>
+      </div>
+    </div>
+    <div class="ob-bottom">
+      <div class="ob-step-dots">
+        <div class="ob-sd active" id="sd0"></div>
+        <div class="ob-sd" id="sd1"></div>
+        <div class="ob-sd" id="sd2"></div>
+      </div>
+      <button class="ob-next" id="obBtn" onclick="next()">继续</button>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;margin:20px;color:#888;font-size:13px;max-width:420px;margin-left:auto;margin-right:auto;">
+  <strong>方案C · 呼吸仪式</strong> (深色暖调)<br><br>
+  <b>设计思路：</b>每天拍照是一种仪式。Onboarding 用呼吸动画引导用户进入"仪式感"状态。<br>
+  中心只有一个在呼吸的圆环 + 极少文字，像冥想引导。<br><br>
+  <b>转场：</b>圆环扩大充满屏幕，然后"破裂"成 Dashboard。<br><br>
+  <b>Dashboard：</b>深色暖调，照片是唯一亮色来源。极简，让照片成为主角。<br>
+  <em>注：虽然是深色，但不是冷黑色，而是暖棕深色，像暗房。</em>
+</p>
+
+<script>
+let cur = 0;
+const texts = [
+  { l1: '每天一张', l2: '记录此刻的你<br>不需要完美，只需要真实' },
+  { l1: '对齐构图', l2: '洋葱皮叠加<br>让每张照片角度一致' },
+  { l1: '看见变化', l2: '365 天自动合成延时短片<br>时间写在你脸上' }
+];
+const sds = [document.getElementById('sd0'),document.getElementById('sd1'),document.getElementById('sd2')];
+const btn = document.getElementById('obBtn');
+const textEl = document.getElementById('obText');
+const l1 = document.getElementById('line1');
+const l2 = document.getElementById('line2');
+
+function show(i) {
+  textEl.classList.remove('show');
+  setTimeout(() => {
+    l1.textContent = texts[i].l1;
+    l2.innerHTML = texts[i].l2;
+    textEl.classList.add('show');
+  }, 300);
+  sds.forEach((s,idx) => s.classList.toggle('active', idx===i));
+  if (i === texts.length-1) { btn.textContent = '开始'; btn.classList.add('final'); }
+  else { btn.textContent = '继续'; btn.classList.remove('final'); }
+}
+function next() { if (cur < texts.length-1) { cur++; show(cur); } else finish(); }
+function finish() {
+  var ob = document.getElementById('ob');
+  ob.classList.add('exit');
+  setTimeout(function() { ob.classList.add('gone'); }, 1000);
+}
+</script>
+</body>
+</html>

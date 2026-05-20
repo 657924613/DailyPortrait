@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方案C · 按钮变形 (Button Morph)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg: #FAFAF7;
+  --surface: #FFFFFF;
+  --primary: #C75B39;
+  --primary-light: #FFF0EB;
+  --ink: #1C1917;
+  --ink2: #78716C;
+  --ink3: #A8A29E;
+  --green: #3D8B40;
+  --blue: #4A6FA5;
+  --radius: 20px;
+  --font: -apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif;
+}
+body { font-family: var(--font); background: #f0f0f0; overflow-x: hidden; }
+.phone { width: 390px; height: 844px; margin: 20px auto; border-radius: 44px; overflow: hidden; position: relative; background: var(--bg); box-shadow: 0 20px 60px rgba(0,0,0,0.12); }
+
+/* ===== Onboarding - Minimal Card ===== */
+.onboarding { position: absolute; inset: 0; z-index: 100; background: var(--bg); display: flex; flex-direction: column; }
+.onboarding .morph-overlay {
+  position: absolute; inset: 0; z-index: 300; pointer-events: none;
+  background: var(--primary); border-radius: 30px;
+  transform: scale(0); opacity: 0;
+  transition: transform 0.6s cubic-bezier(0.4,0,0.2,1), opacity 0.3s 0.4s, border-radius 0.6s;
+  transform-origin: center bottom;
+}
+.onboarding.exit .morph-overlay { transform: scale(3); opacity: 1; border-radius: 0; }
+.onboarding.exit .ob-inner { opacity: 0; transition: opacity 0.2s; }
+.onboarding.gone { display: none; }
+
+.ob-inner { height: 100%; display: flex; flex-direction: column; padding: 56px 0 0; }
+.ob-top { display: flex; justify-content: flex-end; padding: 0 24px; }
+.ob-skip { font-size: 14px; color: var(--ink2); cursor: pointer; padding: 8px 16px; }
+
+.ob-slider { flex: 1; position: relative; overflow: hidden; }
+.ob-slide { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 40px 36px; opacity: 0; transform: scale(0.95); transition: all 0.5s cubic-bezier(0,0,0.2,1); }
+.ob-slide.active { opacity: 1; transform: scale(1); }
+
+.ob-illustration { width: 100%; aspect-ratio: 1.2; border-radius: var(--radius); margin-bottom: 32px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.ob-illustration .bg-pattern { position: absolute; inset: 0; opacity: 0.06; }
+.ob-illustration .center-icon { font-size: 64px; position: relative; z-index: 2; animation: float 4s ease-in-out infinite; }
+@keyframes float { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-10px); } }
+
+.ob-tag { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-bottom: 12px; }
+.ob-h { font-size: 26px; font-weight: 700; color: var(--ink); line-height: 1.35; margin-bottom: 12px; }
+.ob-p { font-size: 14px; color: var(--ink2); line-height: 1.7; }
+
+.ob-footer { padding: 24px 36px 50px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.ob-indicator { display: flex; gap: 6px; }
+.ob-ind { width: 8px; height: 8px; border-radius: 50%; background: var(--ink3); transition: all 0.3s; }
+.ob-ind.active { width: 24px; border-radius: 4px; background: var(--primary); }
+.ob-action { width: 100%; height: 56px; border-radius: 28px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; position: relative; overflow: hidden; transition: all 0.3s; }
+.ob-action-default { background: var(--ink); color: #fff; }
+.ob-action-final { background: var(--primary); color: #fff; box-shadow: 0 6px 24px rgba(199,91,57,0.3); }
+.ob-action:active { transform: scale(0.97); }
+
+/* ===== Dashboard ===== */
+.dashboard { position: absolute; inset: 0; padding: 56px 20px 20px; overflow-y: auto; z-index: 50; opacity: 0; transition: opacity 0.4s 0.5s; }
+.dashboard.show { opacity: 1; }
+
+.d-head { margin-bottom: 24px; }
+.d-sub { font-size: 12px; color: var(--ink2); margin-bottom: 4px; }
+.d-title { font-size: 28px; font-weight: 700; color: var(--ink); }
+.d-actions { display: flex; gap: 8px; margin-top: 12px; }
+.d-chip { padding: 8px 16px; border-radius: 20px; background: var(--surface); border: 1px solid #E7E5E4; font-size: 13px; color: var(--ink); cursor: pointer; }
+.d-chip.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.d-today { background: var(--surface); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.d-today-thumb { width: 72px; height: 72px; border-radius: 16px; background: var(--primary-light); display: flex; align-items: center; justify-content: center; font-size: 28px; }
+.d-today-info { flex: 1; }
+.d-today-label { font-size: 11px; color: var(--ink2); }
+.d-today-date { font-size: 18px; font-weight: 600; color: var(--ink); margin-top: 2px; }
+.d-today-status { font-size: 13px; color: var(--primary); margin-top: 4px; }
+
+.d-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 24px; }
+.d-stat { background: var(--surface); border-radius: 16px; padding: 16px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+.d-stat-val { font-size: 24px; font-weight: 700; color: var(--ink); }
+.d-stat-label { font-size: 11px; color: var(--ink2); margin-top: 4px; }
+
+.d-section { margin-bottom: 16px; }
+.d-section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.d-section-title { font-size: 16px; font-weight: 600; color: var(--ink); }
+.d-section-more { font-size: 12px; color: var(--primary); cursor: pointer; }
+.d-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.d-cell { aspect-ratio: 1; border-radius: 12px; background: #F5F5F0; position: relative; }
+.d-cell-date { position: absolute; bottom: 6px; left: 8px; font-size: 10px; color: var(--ink2); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <!-- Dashboard -->
+  <div class="dashboard" id="dashboard">
+    <div class="d-head">
+      <div class="d-sub">今天下午好</div>
+      <div class="d-title">每日肖像</div>
+      <div class="d-actions">
+        <div class="d-chip primary">📷 拍照</div>
+        <div class="d-chip">⚙️ 设置</div>
+        <div class="d-chip">▶ 视频</div>
+      </div>
+    </div>
+    <div class="d-today">
+      <div class="d-today-thumb">📷</div>
+      <div class="d-today-info">
+        <div class="d-today-label">今日打卡</div>
+        <div class="d-today-date">5月19日</div>
+        <div class="d-today-status">尚未拍摄 →</div>
+      </div>
+    </div>
+    <div class="d-stats">
+      <div class="d-stat"><div class="d-stat-val">15</div><div class="d-stat-label">连续天数</div></div>
+      <div class="d-stat"><div class="d-stat-val">5/7</div><div class="d-stat-label">本周</div></div>
+      <div class="d-stat"><div class="d-stat-val">42</div><div class="d-stat-label">总天数</div></div>
+    </div>
+    <div class="d-section">
+      <div class="d-section-head"><div class="d-section-title">回忆相册</div><div class="d-section-more">统计 →</div></div>
+      <div class="d-grid">
+        <div class="d-cell"><div class="d-cell-date">5.18</div></div>
+        <div class="d-cell"><div class="d-cell-date">5.17</div></div>
+        <div class="d-cell"><div class="d-cell-date">5.16</div></div>
+        <div class="d-cell"><div class="d-cell-date">5.15</div></div>
+        <div class="d-cell"><div class="d-cell-date">5.14</div></div>
+        <div class="d-cell"><div class="d-cell-date">5.13</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding -->
+  <div class="onboarding" id="onboarding">
+    <div class="morph-overlay"></div>
+    <div class="ob-inner">
+      <div class="ob-top"><span class="ob-skip" onclick="finish()">跳过</span></div>
+      <div class="ob-slider">
+        <div class="ob-slide active" id="s0">
+          <div class="ob-illustration" style="background:var(--primary-light)">
+            <div class="center-icon">📷</div>
+          </div>
+          <span class="ob-tag" style="background:rgba(199,91,57,0.1);color:var(--primary)">第一步</span>
+          <div class="ob-h">每天一张<br>属于你的肖像</div>
+          <div class="ob-p">在固定时间记录此刻的自己，累积属于你的视觉档案</div>
+        </div>
+        <div class="ob-slide" id="s1">
+          <div class="ob-illustration" style="background:#E8F5E9">
+            <div class="center-icon">🧅</div>
+          </div>
+          <span class="ob-tag" style="background:#E8F5E9;color:var(--green)">第二步</span>
+          <div class="ob-h">洋葱皮叠加<br>构图始终一致</div>
+          <div class="ob-p">上一张照片半透明叠加在取景框，帮你保持角度和位置稳定</div>
+        </div>
+        <div class="ob-slide" id="s2">
+          <div class="ob-illustration" style="background:#E3F2FD">
+            <div class="center-icon">🎬</div>
+          </div>
+          <span class="ob-tag" style="background:#E3F2FD;color:var(--blue)">第三步</span>
+          <div class="ob-h">时间的痕迹<br>变成动人短片</div>
+          <div class="ob-p">365 天的坚持，自动合成几十秒延时视频</div>
+        </div>
+      </div>
+      <div class="ob-footer">
+        <div class="ob-indicator"><div class="ob-ind active"></div><div class="ob-ind"></div><div class="ob-ind"></div></div>
+        <button class="ob-action ob-action-default" id="actionBtn" onclick="next()">下一步</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;margin:20px;color:#666;font-size:14px;">
+  <strong>方案C · 按钮变形</strong><br>
+  点击"开始记录"时，按钮颜色向外扩张覆盖整个屏幕（morph），<br>
+  然后消散露出 Dashboard。像按钮"爆炸"成新世界。
+</p>
+
+<script>
+let cur = 0;
+const slides = document.querySelectorAll('.ob-slide');
+const inds = document.querySelectorAll('.ob-ind');
+const actionBtn = document.getElementById('actionBtn');
+
+function show(i) {
+  slides.forEach((s,idx) => s.classList.toggle('active', idx===i));
+  inds.forEach((d,idx) => d.classList.toggle('active', idx===i));
+  if (i === slides.length-1) {
+    actionBtn.textContent = '开始记录';
+    actionBtn.className = 'ob-action ob-action-final';
+  } else {
+    actionBtn.textContent = '下一步';
+    actionBtn.className = 'ob-action ob-action-default';
+  }
+}
+function next() {
+  if (cur < slides.length-1) { cur++; show(cur); }
+  else finish();
+}
+function finish() {
+  const ob = document.getElementById('onboarding');
+  ob.classList.add('exit');
+  setTimeout(() => {
+    ob.classList.add('gone');
+    document.getElementById('dashboard').classList.add('show');
+  }, 700);
+  document.getElementById('dashboard').classList.add('show');
+}
+</script>
+</body>
+</html>

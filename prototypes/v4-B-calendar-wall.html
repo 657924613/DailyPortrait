@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方案B · 日历墙 (Calendar Wall)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, 'PingFang SC', sans-serif; background: #888; display:flex; justify-content:center; padding:20px 0; }
+.phone { width:390px; height:844px; border-radius:44px; overflow:hidden; position:relative; background:#FDFAF5; box-shadow:0 30px 80px rgba(0,0,0,0.15); }
+
+/*
+  Dashboard 设计思路：日历墙 (Calendar Wall)
+  
+  核心理念：Dashboard 就是一面"照片墙日历"。
+  整个屏幕是当月的日历网格，每个格子要么是照片缩略图，
+  要么是空白（未拍的天）。今天的格子特别大且高亮。
+  
+  这个设计让用户一眼看到：
+  - 这个月拍了多少天（填充率）
+  - 哪些天漏了（空白格子的"缺口感"会激励补拍）
+  - 今天该拍了（高亮格子）
+  
+  数据不需要单独的卡片——日历本身就是数据可视化。
+  连续天数 = 连续填充的格子数。
+  
+  配色：暖白底 + 赤陶色强调（#B85A3A）
+*/
+
+:root {
+  --bg: #FDFAF5;
+  --surface: #FFFFFF;
+  --primary: #B85A3A;
+  --primary-soft: #F8EBE5;
+  --ink: #2A2018;
+  --ink2: #6A5A48;
+  --ink3: #A89880;
+  --border: #EDE6DC;
+  --filled: #E8DFD4;
+}
+
+.ob { position:absolute; inset:0; z-index:100; background:var(--bg); display:flex; flex-direction:column; }
+.ob .ink-drop { position:absolute; top:50%; left:50%; width:0; height:0; border-radius:50%; background:var(--ink); z-index:300; transform:translate(-50%,-50%); transition: width 0.8s cubic-bezier(0.4,0,0.2,1), height 0.8s cubic-bezier(0.4,0,0.2,1), opacity 0.4s 0.6s; pointer-events:none; }
+.ob.exit .ink-drop { width:200vw; height:200vw; opacity:0; }
+.ob.exit .ob-cw { opacity:0; transition:opacity 0.2s; }
+.ob.gone { display:none; }
+.ob-top { padding:56px 24px 0; display:flex; justify-content:flex-end; }
+.ob-skip { font-size:13px; color:var(--ink3); cursor:pointer; }
+.ob-center { flex:1; display:flex; align-items:center; justify-content:center; padding:0 36px; }
+.ob-pages { width:100%; }
+.ob-pg { display:none; text-align:center; }
+.ob-pg.active { display:block; }
+.ob-visual { width:120px; height:120px; margin:0 auto 32px; border-radius:50%; background:var(--primary-soft); border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; }
+.ob-visual-inner { width:40px; height:40px; border-radius:50%; border:2px solid var(--primary); }
+.ob-visual-sq { width:36px; height:36px; border:2px solid var(--primary); border-radius:8px; position:relative; }
+.ob-visual-sq::before { content:''; position:absolute; inset:-5px -5px auto auto; width:28px; height:28px; border:1.5px solid var(--primary); border-radius:6px; opacity:0.4; }
+.ob-visual-tri { width:0; height:0; border-left:18px solid var(--primary); border-top:12px solid transparent; border-bottom:12px solid transparent; margin-left:4px; }
+.ob-h { font-size:24px; font-weight:600; color:var(--ink); line-height:1.4; margin-bottom:12px; }
+.ob-p { font-size:14px; color:var(--ink2); line-height:1.8; }
+.ob-bottom { padding:24px 36px 48px; display:flex; flex-direction:column; align-items:center; gap:20px; }
+.ob-dots { display:flex; gap:8px; }
+.ob-dot { width:6px; height:6px; border-radius:50%; background:var(--border); transition:all 0.3s; }
+.ob-dot.active { width:20px; border-radius:3px; background:var(--primary); }
+.ob-btn { width:100%; height:54px; border-radius:27px; border:none; font-size:15px; font-weight:500; cursor:pointer; }
+.ob-btn-n { background:var(--ink); color:var(--bg); }
+.ob-btn-s { background:var(--primary); color:#fff; }
+.ob-btn:active { transform:scale(0.97); }
+
+/* ===== Dashboard - Calendar Wall ===== */
+.dash { position:absolute; inset:0; z-index:50; background:var(--bg); display:flex; flex-direction:column; padding:56px 16px 16px; }
+
+.dash-top { display:flex; justify-content:space-between; align-items:center; padding:0 8px; margin-bottom:16px; flex-shrink:0; }
+.dash-month { font-size:20px; font-weight:600; color:var(--ink); }
+.dash-streak { font-size:12px; color:var(--primary); font-weight:500; padding:4px 12px; border:1px solid var(--primary); border-radius:12px; }
+.dash-top-btns { display:flex; gap:8px; }
+.dash-top-btn { width:34px; height:34px; border-radius:50%; border:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:center; font-size:13px; cursor:pointer; }
+
+/* 星期标题 */
+.cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:0 4px; margin-bottom:8px; flex-shrink:0; }
+.cal-wd { text-align:center; font-size:10px; color:var(--ink3); letter-spacing:1px; padding:4px 0; }
+
+/* 日历网格 */
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:0 4px; flex:1; align-content:start; }
+.cal-cell { border-radius:10px; background:var(--surface); border:1px solid var(--border); position:relative; display:flex; align-items:center; justify-content:center; min-height:0; aspect-ratio:1; overflow:hidden; }
+.cal-cell .day-num { font-size:11px; color:var(--ink3); position:absolute; top:4px; left:6px; }
+.cal-cell.empty { background:transparent; border-color:transparent; }
+.cal-cell.filled { background:var(--filled); border-color:var(--filled); }
+.cal-cell.filled .day-num { color:var(--ink2); }
+.cal-cell.today { border:2px solid var(--primary); background:var(--primary-soft); }
+.cal-cell.today .day-num { color:var(--primary); font-weight:700; }
+.cal-cell.today .today-label { position:absolute; bottom:4px; font-size:8px; color:var(--primary); font-weight:600; }
+
+/* 底部操作 */
+.dash-bottom { flex-shrink:0; padding:12px 8px 0; display:flex; justify-content:space-between; align-items:center; }
+.dash-shoot { height:44px; padding:0 24px; border-radius:22px; background:var(--primary); color:#fff; border:none; font-size:14px; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:8px; }
+.dash-shoot:active { transform:scale(0.97); }
+.dash-stats-mini { display:flex; gap:16px; }
+.dsm { text-align:center; }
+.dsm-v { font-size:14px; font-weight:700; color:var(--ink); }
+.dsm-l { font-size:8px; color:var(--ink3); margin-top:1px; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="dash">
+    <div class="dash-top">
+      <div class="dash-month">2026年5月</div>
+      <div class="dash-top-btns">
+        <div class="dash-top-btn">▶</div>
+        <div class="dash-top-btn">⚙</div>
+      </div>
+    </div>
+    <div class="cal-weekdays">
+      <div class="cal-wd">一</div><div class="cal-wd">二</div><div class="cal-wd">三</div>
+      <div class="cal-wd">四</div><div class="cal-wd">五</div><div class="cal-wd">六</div><div class="cal-wd">日</div>
+    </div>
+    <div class="cal-grid">
+      <!-- 5月1日是周四，前面空3格 -->
+      <div class="cal-cell empty"></div><div class="cal-cell empty"></div><div class="cal-cell empty"></div>
+      <div class="cal-cell filled"><span class="day-num">1</span></div>
+      <div class="cal-cell filled"><span class="day-num">2</span></div>
+      <div class="cal-cell filled"><span class="day-num">3</span></div>
+      <div class="cal-cell filled"><span class="day-num">4</span></div>
+      <div class="cal-cell filled"><span class="day-num">5</span></div>
+      <div class="cal-cell filled"><span class="day-num">6</span></div>
+      <div class="cal-cell"><span class="day-num">7</span></div>
+      <div class="cal-cell filled"><span class="day-num">8</span></div>
+      <div class="cal-cell filled"><span class="day-num">9</span></div>
+      <div class="cal-cell filled"><span class="day-num">10</span></div>
+      <div class="cal-cell"><span class="day-num">11</span></div>
+      <div class="cal-cell filled"><span class="day-num">12</span></div>
+      <div class="cal-cell filled"><span class="day-num">13</span></div>
+      <div class="cal-cell filled"><span class="day-num">14</span></div>
+      <div class="cal-cell filled"><span class="day-num">15</span></div>
+      <div class="cal-cell filled"><span class="day-num">16</span></div>
+      <div class="cal-cell filled"><span class="day-num">17</span></div>
+      <div class="cal-cell filled"><span class="day-num">18</span></div>
+      <div class="cal-cell today"><span class="day-num">19</span><span class="today-label">今天</span></div>
+      <div class="cal-cell"><span class="day-num">20</span></div>
+      <div class="cal-cell"><span class="day-num">21</span></div>
+      <div class="cal-cell"><span class="day-num">22</span></div>
+      <div class="cal-cell"><span class="day-num">23</span></div>
+      <div class="cal-cell"><span class="day-num">24</span></div>
+      <div class="cal-cell"><span class="day-num">25</span></div>
+      <div class="cal-cell"><span class="day-num">26</span></div>
+      <div class="cal-cell"><span class="day-num">27</span></div>
+      <div class="cal-cell"><span class="day-num">28</span></div>
+      <div class="cal-cell"><span class="day-num">29</span></div>
+      <div class="cal-cell"><span class="day-num">30</span></div>
+      <div class="cal-cell"><span class="day-num">31</span></div>
+    </div>
+    <div class="dash-bottom">
+      <button class="dash-shoot">📷 拍下今天</button>
+      <div class="dash-stats-mini">
+        <div class="dsm"><div class="dsm-v">15</div><div class="dsm-l">连续</div></div>
+        <div class="dsm"><div class="dsm-v">16/19</div><div class="dsm-l">本月</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ob" id="ob">
+    <div class="ink-drop"></div>
+    <div class="ob-cw">
+    <div class="ob-top"><span class="ob-skip" onclick="finish()">跳过</span></div>
+    <div class="ob-center"><div class="ob-pages">
+      <div class="ob-pg active" id="p0"><div class="ob-visual"><div class="ob-visual-inner"></div></div><div class="ob-h">每天一张<br>真实的此刻</div><div class="ob-p">不需要完美，只需要真实<br>按下快门，记录今天的你</div></div>
+      <div class="ob-pg" id="p1"><div class="ob-visual"><div class="ob-visual-sq"></div></div><div class="ob-h">洋葱皮叠加<br>构图始终一致</div><div class="ob-p">上一张半透明覆盖取景框<br>帮你保持角度稳定</div></div>
+      <div class="ob-pg" id="p2"><div class="ob-visual"><div class="ob-visual-tri"></div></div><div class="ob-h">365 天的坚持<br>变成延时短片</div><div class="ob-p">自动合成视频<br>看见时间写在你脸上</div></div>
+    </div></div>
+    <div class="ob-bottom">
+      <div class="ob-dots"><div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
+      <button class="ob-btn ob-btn-n" id="obBtn" onclick="next()">继续</button>
+    </div>
+    </div><!-- ob-cw -->
+  </div>
+</div>
+
+<p style="text-align:center;margin:20px;color:#666;font-size:13px;max-width:460px;margin-left:auto;margin-right:auto;line-height:1.8;">
+  <strong>方案B · 日历墙</strong><br>
+  Dashboard 核心理念：<b>整个屏幕就是当月日历</b>。<br>
+  拍过的天有填充色，未拍的天是空白——空白格子的"缺口感"激励用户补拍。<br>
+  今天的格子高亮 + 标注。不需要单独的数据卡片，日历本身就是数据可视化。<br>
+  底部一个醒目的"拍下今天"按钮。
+</p>
+
+<script>
+var cur=0,pgs=document.querySelectorAll('.ob-pg'),dots=document.querySelectorAll('.ob-dot'),btn=document.getElementById('obBtn');
+function show(i){for(var j=0;j<pgs.length;j++){pgs[j].classList.remove('active');dots[j].classList.remove('active');}pgs[i].classList.add('active');dots[i].classList.add('active');btn.textContent=i===2?'开始记录':'继续';btn.className=i===2?'ob-btn ob-btn-s':'ob-btn ob-btn-n';}
+function next(){if(cur<2){cur++;show(cur);}else finish();}
+function finish(){var o=document.getElementById('ob');o.classList.add('exit');setTimeout(function(){o.classList.add('gone');},800);}
+</script>
+</body>
+</html>

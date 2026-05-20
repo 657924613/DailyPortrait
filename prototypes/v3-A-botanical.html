@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方案A · 植物图鉴 (Botanical Archive)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif; background: #B8C4B0; }
+.phone { width: 390px; height: 844px; margin: 20px auto; border-radius: 44px; overflow: hidden; position: relative; box-shadow: 0 30px 80px rgba(0,0,0,0.12); }
+
+/*
+  设计理念：植物图鉴 (Botanical Archive)
+  
+  灵感来源：维多利亚时代的植物标本册。
+  
+  核心隐喻：你的脸就像一株植物，每天记录它的生长。
+  一年后翻开这本"标本册"，你会看到时间如何塑造了你。
+  
+  视觉语言：
+  - 背景：淡薄荷绿（#F4F7F2）—— 像标本纸的颜色
+  - 强调色：深松绿（#3D6B5C）—— 克制、自然、有生命力
+  - 装饰：细线框、圆形标本框、手绘风虚线
+  - 排版：大量留白 + 居中对称 + 衬线感标题
+  
+  转场：Onboarding 像标本册合上 —— 从中间向两侧折叠消失
+*/
+
+:root {
+  --bg: #F4F7F2;
+  --surface: #FFFFFF;
+  --primary: #3D6B5C;
+  --primary-soft: #E8F0EC;
+  --ink: #1A2E26;
+  --ink2: #5A7A6E;
+  --ink3: #9BB0A6;
+  --border: #D4E0DA;
+  --accent: #C17A4A;
+  --radius: 20px;
+}
+
+/* ===== Onboarding ===== */
+.ob { position: absolute; inset: 0; z-index: 100; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; }
+.ob .ink-drop { position:absolute; top:50%; left:50%; width:0; height:0; border-radius:50%; background:var(--primary); z-index:300; transform:translate(-50%,-50%); transition: width 0.8s cubic-bezier(0.4,0,0.2,1), height 0.8s cubic-bezier(0.4,0,0.2,1), opacity 0.4s 0.6s; pointer-events:none; }
+.ob.exit .ink-drop { width:200vw; height:200vw; opacity:0; }
+.ob.exit .ob-inner { opacity: 0; transition: opacity 0.2s; }
+.ob.gone { display: none; }
+
+.ob-inner { position: relative; z-index: 250; height: 100%; display: flex; flex-direction: column; }
+
+.ob-top { padding: 56px 24px 0; display: flex; justify-content: space-between; align-items: center; }
+.ob-brand { font-size: 11px; letter-spacing: 3px; color: var(--ink2); }
+.ob-skip { font-size: 13px; color: var(--ink3); cursor: pointer; padding: 8px 12px; border: 1px solid var(--border); border-radius: 20px; }
+
+.ob-stage { flex: 1; position: relative; }
+.ob-card { position: absolute; inset: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transform: scale(0.96); transition: all 0.6s cubic-bezier(0,0,0.2,1); pointer-events: none; }
+.ob-card.active { opacity: 1; transform: scale(1); pointer-events: auto; }
+
+/* 标本框 */
+.specimen-frame { width: 220px; height: 220px; border-radius: 50%; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 40px; }
+.specimen-frame::before { content: ''; position: absolute; inset: 12px; border-radius: 50%; border: 1px dashed var(--border); }
+.specimen-frame::after { content: ''; position: absolute; inset: 28px; border-radius: 50%; background: var(--primary-soft); }
+.specimen-icon { position: relative; z-index: 2; width: 64px; height: 64px; }
+/* SVG 图标用纯 CSS 画 */
+.icon-camera { width: 56px; height: 56px; border: 2px solid var(--primary); border-radius: 14px; position: relative; z-index: 2; }
+.icon-camera::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--primary); }
+.icon-camera::after { content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 16px; height: 6px; border-radius: 3px; background: var(--primary); }
+
+.icon-layers { width: 48px; height: 48px; position: relative; z-index: 2; }
+.icon-layers span { position: absolute; width: 36px; height: 36px; border: 2px solid var(--primary); border-radius: 8px; }
+.icon-layers span:nth-child(1) { top: 0; left: 0; }
+.icon-layers span:nth-child(2) { top: 6px; left: 6px; background: var(--primary-soft); }
+.icon-layers span:nth-child(3) { top: 12px; left: 12px; background: var(--surface); }
+
+.icon-film { width: 48px; height: 56px; border: 2px solid var(--primary); border-radius: 6px; position: relative; z-index: 2; }
+.icon-film::before, .icon-film::after { content: ''; position: absolute; left: 50%; transform: translateX(-50%); width: 60%; height: 2px; background: var(--primary); }
+.icon-film::before { top: 33%; }
+.icon-film::after { top: 66%; }
+
+.ob-number { font-size: 11px; letter-spacing: 4px; color: var(--ink3); margin-bottom: 16px; }
+.ob-title { font-size: 26px; font-weight: 300; color: var(--ink); text-align: center; line-height: 1.5; letter-spacing: 1px; }
+.ob-title b { font-weight: 600; }
+.ob-desc { font-size: 14px; color: var(--ink2); text-align: center; line-height: 1.9; margin-top: 16px; }
+
+.ob-bottom { padding: 0 32px 48px; display: flex; flex-direction: column; align-items: center; gap: 20px; position: relative; z-index: 250; }
+.ob-dots { display: flex; gap: 16px; }
+.ob-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--ink3); transition: all 0.4s; }
+.ob-dot.active { background: var(--primary); border-color: var(--primary); }
+.ob-btn { width: 100%; height: 54px; border-radius: 27px; border: 1.5px solid var(--primary); background: transparent; color: var(--primary); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.3s; letter-spacing: 1px; }
+.ob-btn.final { background: var(--primary); color: var(--surface); }
+.ob-btn:active { transform: scale(0.97); }
+
+/* ===== Dashboard ===== */
+.dash { position: absolute; inset: 0; z-index: 50; background: var(--bg); padding: 56px 20px 20px; overflow-y: auto; }
+
+.dash-header { text-align: center; margin-bottom: 28px; padding: 0 12px; }
+.dash-eyebrow { font-size: 10px; letter-spacing: 3px; color: var(--ink3); margin-bottom: 8px; }
+.dash-day { font-size: 42px; font-weight: 200; color: var(--ink); }
+.dash-day b { font-weight: 700; }
+.dash-sub { font-size: 12px; color: var(--ink2); margin-top: 4px; }
+
+.dash-today { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+.dash-today-img { width: 100%; aspect-ratio: 1.6; background: var(--primary-soft); display: flex; align-items: center; justify-content: center; position: relative; }
+.dash-today-img .circle-guide { width: 100px; height: 100px; border-radius: 50%; border: 1.5px dashed var(--primary); opacity: 0.5; }
+.dash-today-bar { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+.dtb-left { }
+.dtb-label { font-size: 10px; color: var(--ink3); letter-spacing: 1px; }
+.dtb-date { font-size: 16px; font-weight: 500; color: var(--ink); margin-top: 2px; }
+.dtb-cta { font-size: 13px; color: var(--primary); font-weight: 500; padding: 8px 16px; border: 1px solid var(--primary); border-radius: 20px; cursor: pointer; }
+
+.dash-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+.ds-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; text-align: center; }
+.ds-val { font-size: 24px; font-weight: 200; color: var(--ink); }
+.ds-val b { font-weight: 700; color: var(--primary); }
+.ds-label { font-size: 10px; color: var(--ink3); margin-top: 4px; letter-spacing: 1px; }
+
+.dash-section { margin-bottom: 16px; }
+.ds-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px; }
+.ds-title { font-size: 11px; letter-spacing: 2px; color: var(--ink3); }
+.ds-link { font-size: 11px; color: var(--primary); cursor: pointer; }
+.dash-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.dg-cell { aspect-ratio: 1; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); position: relative; overflow: hidden; }
+.dg-cell::after { content: attr(data-d); position: absolute; bottom: 6px; left: 8px; font-size: 9px; color: var(--ink3); }
+.dg-cell .fill { position: absolute; inset: 0; background: linear-gradient(135deg, var(--primary-soft), #D4E8DC); opacity: 0.6; }
+
+/* 底部操作栏 */
+.dash-fab { position: fixed; bottom: 36px; left: 50%; transform: translateX(-50%); width: 56px; height: 56px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(61,107,92,0.3); cursor: pointer; z-index: 60; }
+.dash-fab::before { content: ''; width: 20px; height: 20px; border: 2px solid #fff; border-radius: 6px; position: relative; }
+.dash-fab::after { content: ''; position: absolute; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="dash">
+    <div class="dash-header">
+      <div class="dash-eyebrow">2026年5月19日</div>
+      <div class="dash-day">第 <b>15</b> 天</div>
+      <div class="dash-sub">连续记录中</div>
+    </div>
+    <div class="dash-today">
+      <div class="dash-today-img"><div class="circle-guide"></div></div>
+      <div class="dash-today-bar">
+        <div class="dtb-left"><div class="dtb-label">今日</div><div class="dtb-date">5月19日</div></div>
+        <div class="dtb-cta">去拍照</div>
+      </div>
+    </div>
+    <div class="dash-stats">
+      <div class="ds-card"><div class="ds-val"><b>15</b></div><div class="ds-label">连续</div></div>
+      <div class="ds-card"><div class="ds-val"><b>5</b>/7</div><div class="ds-label">本周</div></div>
+      <div class="ds-card"><div class="ds-val"><b>42</b></div><div class="ds-label">总计</div></div>
+    </div>
+    <div class="dash-section">
+      <div class="ds-head"><div class="ds-title">档案</div><div class="ds-link">统计</div></div>
+      <div class="dash-grid">
+        <div class="dg-cell" data-d="5.18"><div class="fill"></div></div>
+        <div class="dg-cell" data-d="5.17"><div class="fill"></div></div>
+        <div class="dg-cell" data-d="5.16"><div class="fill"></div></div>
+        <div class="dg-cell" data-d="5.15"><div class="fill"></div></div>
+        <div class="dg-cell" data-d="5.14"><div class="fill"></div></div>
+        <div class="dg-cell" data-d="5.13"><div class="fill"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ob" id="ob">
+    <div class="ink-drop"></div>
+    <div class="ob-inner">
+      <div class="ob-top">
+        <div class="ob-brand">每日肖像</div>
+        <span class="ob-skip" onclick="finish()">跳过</span>
+      </div>
+      <div class="ob-stage">
+        <div class="ob-card active" id="c0">
+          <div class="specimen-frame"><div class="icon-camera"></div></div>
+          <div class="ob-number">01 / 03</div>
+          <div class="ob-title">每天一张<br><b>真实的此刻</b></div>
+          <div class="ob-desc">不需要完美的光线<br>只需要你，此刻的样子</div>
+        </div>
+        <div class="ob-card" id="c1">
+          <div class="specimen-frame"><div class="icon-layers"><span></span><span></span><span></span></div></div>
+          <div class="ob-number">02 / 03</div>
+          <div class="ob-title">洋葱皮叠加<br><b>构图始终一致</b></div>
+          <div class="ob-desc">上一张半透明覆盖取景框<br>帮你保持角度稳定</div>
+        </div>
+        <div class="ob-card" id="c2">
+          <div class="specimen-frame"><div class="icon-film"></div></div>
+          <div class="ob-number">03 / 03</div>
+          <div class="ob-title">时间的痕迹<br><b>变成动人短片</b></div>
+          <div class="ob-desc">365 天的坚持<br>自动合成延时视频</div>
+        </div>
+      </div>
+      <div class="ob-bottom">
+        <div class="ob-dots"><div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
+        <button class="ob-btn" id="btn" onclick="next()">继续</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;margin:20px;color:#666;font-size:13px;max-width:440px;margin-left:auto;margin-right:auto;line-height:1.8;">
+  <strong>方案A · 植物图鉴</strong><br>
+  灵感：维多利亚时代植物标本册。你的脸像一株植物，每天记录它的生长。<br>
+  配色：薄荷绿纸张底 + 深松绿强调。圆形标本框 + 虚线装饰 + 纯 CSS 图标。<br>
+  转场：标本册从中间向两侧"合上"消失。
+</p>
+
+<script>
+let cur=0;
+const cards=document.querySelectorAll('.ob-card');
+const dots=document.querySelectorAll('.ob-dot');
+const btn=document.getElementById('btn');
+function show(i){cards.forEach((c,idx)=>c.classList.toggle('active',idx===i));dots.forEach((d,idx)=>d.classList.toggle('active',idx===i));btn.textContent=i===2?'开始记录':'继续';btn.classList.toggle('final',i===2);}
+function next(){if(cur<2){cur++;show(cur);}else finish();}
+function finish(){const o=document.getElementById('ob');o.classList.add('exit');setTimeout(()=>o.classList.add('gone'),1000);}
+</script>
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方案C · 陶瓷釉面 (Ceramic Glaze)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, 'PingFang SC', sans-serif; background: #C4B8A8; display:flex; justify-content:center; align-items:flex-start; padding: 20px 0; }
+.phone { width: 390px; height: 844px; border-radius: 44px; overflow: hidden; position: relative; box-shadow: 0 30px 80px rgba(0,0,0,0.12); background: #F8F4EE; }
+
+:root {
+  --bg: #F8F4EE;
+  --surface: #FFFDF8;
+  --primary: #4A6B8A;
+  --primary-soft: #E4EDF4;
+  --ink: #2A2420;
+  --ink2: #6A5E54;
+  --ink3: #A89E94;
+  --border: #E8E2DA;
+}
+
+/* ===== Onboarding ===== */
+.ob { position: absolute; inset: 0; z-index: 100; background: var(--bg); }
+.ob .ink-drop { position:absolute; top:50%; left:50%; width:0; height:0; border-radius:50%; background:var(--primary); z-index:300; transform:translate(-50%,-50%); transition: width 0.8s cubic-bezier(0.4,0,0.2,1), height 0.8s cubic-bezier(0.4,0,0.2,1), opacity 0.4s 0.6s; pointer-events:none; }
+.ob.exit .ink-drop { width:200vw; height:200vw; opacity:0; }
+.ob.exit .ob-real { opacity:0; transition:opacity 0.2s; }
+.ob.gone { display: none; }
+
+.shards { position: absolute; inset: 0; z-index: 300; pointer-events: none; }
+.shard { position: absolute; background: var(--bg); transition: transform 0.8s cubic-bezier(0.4,0,0.2,1), opacity 0.4s 0.4s; }
+.shard-1 { top: 0; left: 0; width: 55%; height: 45%; clip-path: polygon(0 0, 100% 0, 80% 100%, 0 85%); }
+.shard-2 { top: 0; right: 0; width: 50%; height: 50%; clip-path: polygon(15% 0, 100% 0, 100% 90%, 0 100%); }
+.shard-3 { bottom: 0; left: 0; width: 50%; height: 55%; clip-path: polygon(0 10%, 100% 0, 90% 100%, 0 100%); }
+.shard-4 { bottom: 0; right: 0; width: 55%; height: 50%; clip-path: polygon(10% 0, 100% 15%, 100% 100%, 0 100%); }
+
+.ob-real { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 250; }
+
+.ob-nav { padding: 56px 28px 0; display: flex; justify-content: space-between; align-items: center; }
+.ob-mark { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--primary); display: flex; align-items: center; justify-content: center; }
+.ob-mark::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+.ob-skip { font-size: 12px; color: var(--ink3); cursor: pointer; }
+
+/* 页面内容 - 只显示当前页 */
+.ob-pages { flex: 1; overflow: hidden; }
+.ob-page { display: none; height: 100%; padding: 32px; flex-direction: column; }
+.ob-page.active { display: flex; }
+
+.ob-shape-wrap { display: flex; justify-content: flex-end; padding-right: 16px; margin-bottom: 24px; }
+.cs-1 { width: 100px; height: 100px; border-radius: 50% 50% 50% 20%; background: var(--primary-soft); border: 1px solid var(--border); }
+.cs-2 { width: 80px; height: 110px; border-radius: 40px 40px 20px 20px; background: var(--primary-soft); border: 1px solid var(--border); }
+.cs-3 { width: 110px; height: 80px; border-radius: 55px 55px 14px 14px; background: var(--primary-soft); border: 1px solid var(--border); position: relative; }
+.cs-3::after { content: ''; position: absolute; inset: 12px; border-radius: 43px 43px 6px 6px; border: 1px solid var(--border); }
+
+.ob-num { font-size: 72px; font-weight: 100; color: var(--border); line-height: 1; }
+.ob-headline { font-size: 26px; font-weight: 300; color: var(--ink); line-height: 1.5; margin-top: 8px; }
+.ob-headline strong { font-weight: 700; color: var(--primary); }
+.ob-detail { font-size: 14px; color: var(--ink2); line-height: 1.9; margin-top: 16px; }
+
+.ob-foot { padding: 20px 32px 44px; display: flex; justify-content: space-between; align-items: center; }
+.ob-line { display: flex; gap: 6px; align-items: center; }
+.ob-seg { height: 3px; border-radius: 2px; transition: all 0.4s; }
+.seg-done { width: 24px; background: var(--primary); }
+.seg-cur { width: 32px; background: var(--primary); }
+.seg-todo { width: 16px; background: var(--border); }
+.ob-action { height: 48px; padding: 0 28px; border-radius: 24px; border: none; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.25s; }
+.ob-action-go { background: var(--ink); color: var(--bg); }
+.ob-action-start { background: var(--primary); color: #fff; }
+.ob-action:active { transform: scale(0.96); }
+
+/* ===== Dashboard ===== */
+.dash { position: absolute; inset: 0; z-index: 50; background: var(--bg); padding: 56px 24px 24px; overflow-y: auto; }
+.d-header { margin-bottom: 28px; }
+.d-small { font-size: 11px; color: var(--ink3); letter-spacing: 1px; }
+.d-huge { font-size: 52px; font-weight: 100; color: var(--ink); line-height: 1.1; margin-top: 4px; }
+.d-huge b { font-weight: 700; color: var(--primary); }
+.d-label { font-size: 12px; color: var(--ink2); margin-top: 4px; }
+
+.d-today { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 20px; margin-bottom: 16px; display: flex; gap: 16px; align-items: center; }
+.d-today-shape { width: 56px; height: 56px; border-radius: 50% 50% 50% 16%; background: var(--primary-soft); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.d-today-shape::after { content: ''; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--primary); }
+.d-today-text { flex: 1; }
+.d-today-main { font-size: 15px; font-weight: 500; color: var(--ink); }
+.d-today-sub { font-size: 12px; color: var(--ink3); margin-top: 3px; }
+.d-today-cta { font-size: 12px; color: var(--primary); font-weight: 600; margin-top: 5px; cursor: pointer; }
+
+.d-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.d-metric { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 18px; }
+.d-metric-v { font-size: 28px; font-weight: 100; color: var(--ink); }
+.d-metric-v b { font-weight: 700; color: var(--primary); }
+.d-metric-l { font-size: 10px; color: var(--ink3); margin-top: 4px; letter-spacing: 1px; }
+
+.d-archive-h { display: flex; justify-content: space-between; margin-bottom: 12px; }
+.d-archive-t { font-size: 11px; color: var(--ink3); letter-spacing: 1px; }
+.d-archive-link { font-size: 11px; color: var(--primary); cursor: pointer; }
+.d-archive-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.d-archive-cell { aspect-ratio: 1; border-radius: 16px 16px 16px 6px; background: var(--surface); border: 1px solid var(--border); position: relative; overflow: hidden; }
+.d-archive-cell::after { content: attr(data-d); position: absolute; bottom: 8px; left: 10px; font-size: 9px; color: var(--ink3); }
+.d-archive-cell .inner { position: absolute; inset: 0; background: linear-gradient(135deg, var(--primary-soft), transparent); opacity: 0.5; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <!-- Dashboard -->
+  <div class="dash">
+    <div class="d-header">
+      <div class="d-small">2026年5月19日</div>
+      <div class="d-huge"><b>15</b></div>
+      <div class="d-label">连续记录的第十五天</div>
+    </div>
+    <div class="d-today">
+      <div class="d-today-shape"></div>
+      <div class="d-today-text">
+        <div class="d-today-main">今日 · 等待记录</div>
+        <div class="d-today-sub">5月19日 星期一</div>
+        <div class="d-today-cta">去拍照 →</div>
+      </div>
+    </div>
+    <div class="d-metrics">
+      <div class="d-metric"><div class="d-metric-v"><b>15</b> 天</div><div class="d-metric-l">连续</div></div>
+      <div class="d-metric"><div class="d-metric-v"><b>5</b> / 7</div><div class="d-metric-l">本周</div></div>
+    </div>
+    <div class="d-archive-h"><div class="d-archive-t">档案</div><div class="d-archive-link">统计</div></div>
+    <div class="d-archive-grid">
+      <div class="d-archive-cell" data-d="5.18"><div class="inner"></div></div>
+      <div class="d-archive-cell" data-d="5.17"><div class="inner"></div></div>
+      <div class="d-archive-cell" data-d="5.16"><div class="inner"></div></div>
+      <div class="d-archive-cell" data-d="5.15"><div class="inner"></div></div>
+      <div class="d-archive-cell" data-d="5.14"><div class="inner"></div></div>
+      <div class="d-archive-cell" data-d="5.13"><div class="inner"></div></div>
+    </div>
+  </div>
+
+  <!-- Onboarding -->
+  <div class="ob" id="ob">
+    <div class="ink-drop"></div>
+    <div class="ob-real">
+      <div class="ob-nav">
+        <div class="ob-mark"></div>
+        <span class="ob-skip" onclick="finish()">跳过</span>
+      </div>
+      <div class="ob-pages">
+        <div class="ob-page active" id="pg0">
+          <div class="ob-shape-wrap"><div class="cs-1"></div></div>
+          <div class="ob-num">01</div>
+          <div class="ob-headline">每天一张<br><strong>真实的此刻</strong></div>
+          <div class="ob-detail">不需要完美的光线<br>不需要精心的准备<br>只需要你，此刻的样子</div>
+        </div>
+        <div class="ob-page" id="pg1">
+          <div class="ob-shape-wrap"><div class="cs-2"></div></div>
+          <div class="ob-num">02</div>
+          <div class="ob-headline">洋葱皮叠加<br><strong>构图始终一致</strong></div>
+          <div class="ob-detail">上一张照片半透明覆盖<br>帮你保持角度和位置稳定<br>变化才更清晰可见</div>
+        </div>
+        <div class="ob-page" id="pg2">
+          <div class="ob-shape-wrap"><div class="cs-3"></div></div>
+          <div class="ob-num">03</div>
+          <div class="ob-headline">时间的痕迹<br><strong>变成动人短片</strong></div>
+          <div class="ob-detail">365 天的坚持<br>自动合成延时视频<br>你会惊讶于自己的变化</div>
+        </div>
+      </div>
+      <div class="ob-foot">
+        <div class="ob-line" id="segs">
+          <div class="ob-seg seg-cur"></div>
+          <div class="ob-seg seg-todo"></div>
+          <div class="ob-seg seg-todo"></div>
+        </div>
+        <button class="ob-action ob-action-go" id="actBtn" onclick="next()">继续</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;margin:20px;color:#666;font-size:13px;max-width:440px;margin-left:auto;margin-right:auto;line-height:1.8;">
+  <strong>方案C · 陶瓷釉面</strong><br>
+  灵感：日本侘寂 + 手工陶瓷。<br>
+  配色：陶土暖白底 + 窑变蓝强调。不规则圆角 + 抽象陶瓷形状。<br>
+  转场：像陶瓷碎裂——碎片向四方飞散。
+</p>
+
+<script>
+var cur = 0;
+var pages = document.querySelectorAll('.ob-page');
+var segs = document.getElementById('segs');
+var actBtn = document.getElementById('actBtn');
+
+function show(i) {
+  for (var j = 0; j < pages.length; j++) {
+    pages[j].classList.remove('active');
+  }
+  pages[i].classList.add('active');
+
+  var html = '';
+  for (var j = 0; j < 3; j++) {
+    if (j < i) html += '<div class="ob-seg seg-done"></div>';
+    else if (j === i) html += '<div class="ob-seg seg-cur"></div>';
+    else html += '<div class="ob-seg seg-todo"></div>';
+  }
+  segs.innerHTML = html;
+
+  if (i === 2) {
+    actBtn.textContent = '开始记录';
+    actBtn.className = 'ob-action ob-action-start';
+  } else {
+    actBtn.textContent = '继续';
+    actBtn.className = 'ob-action ob-action-go';
+  }
+}
+
+function next() {
+  if (cur < 2) { cur++; show(cur); }
+  else { finish(); }
+}
+
+function finish() {
+  document.getElementById('ob').classList.add('exit');
+  setTimeout(function() {
+    document.getElementById('ob').classList.add('gone');
+  }, 1200);
+}
+</script>
+</body>
+</html>

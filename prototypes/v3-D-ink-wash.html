@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方案D · 水墨晕染 (Ink Wash)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, 'PingFang SC', sans-serif; background: #A8A098; }
+.phone { width: 390px; height: 844px; margin: 20px auto; border-radius: 44px; overflow: hidden; position: relative; box-shadow: 0 30px 80px rgba(0,0,0,0.12); }
+
+/*
+  设计理念：水墨晕染 (Ink Wash)
+  
+  灵感来源：中国水墨画的"留白"哲学 + 宣纸质感。
+  
+  核心隐喻：每天拍照就像每天落一笔墨。
+  单独看是一个墨点，连起来看是一幅画。
+  
+  视觉语言：
+  - 背景：宣纸白（#FDFBF7）—— 微微泛黄的纸张
+  - 强调色：浓墨（#2C2C2C）+ 朱砂红（#C44D3F）—— 印章的颜色
+  - 装饰：墨点、晕染渐变、竖排文字元素
+  - 排版：极大留白 + 文字偏左上（像题字的位置）
+  - 卡片：无边框，用墨色浓淡区分层级
+  
+  转场：墨滴从中心扩散晕染覆盖全屏，然后褪去露出 Dashboard
+*/
+
+:root {
+  --bg: #FDFBF7;
+  --surface: #FFFFFF;
+  --ink: #2C2C2C;
+  --ink2: #5A5550;
+  --ink3: #A09890;
+  --ink4: #D4CFC8;
+  --red: #C44D3F;
+  --red-soft: #F8E8E6;
+  --border: #EAE6E0;
+}
+
+/* ===== Onboarding ===== */
+.ob { position: absolute; inset: 0; z-index: 100; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; }
+
+/* 墨滴晕染转场 */
+.ob .ink-drop {
+  position: absolute; top: 50%; left: 50%; width: 0; height: 0;
+  border-radius: 50%; background: var(--ink); z-index: 300;
+  transform: translate(-50%,-50%);
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1), height 0.8s cubic-bezier(0.4,0,0.2,1), opacity 0.4s 0.6s;
+}
+.ob.exit .ink-drop { width: 200vw; height: 200vw; opacity: 0; }
+.ob.exit .ob-inner { opacity: 0; transition: opacity 0.3s; }
+.ob.gone { display: none; }
+
+.ob-inner { height: 100%; display: flex; flex-direction: column; position: relative; z-index: 2; }
+
+.ob-top { padding: 56px 28px 0; display: flex; justify-content: space-between; align-items: center; }
+/* 印章 logo */
+.ob-seal { width: 36px; height: 36px; border: 2px solid var(--red); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--red); font-weight: 700; transform: rotate(-3deg); }
+.ob-skip { font-size: 12px; color: var(--ink3); cursor: pointer; }
+
+.ob-pages { flex: 1; position: relative; }
+.ob-pg { position: absolute; inset: 0; padding: 40px 32px; display: flex; flex-direction: column; opacity: 0; transform: translateY(20px); transition: all 0.7s cubic-bezier(0,0,0.2,1); pointer-events: none; }
+.ob-pg.active { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+/* 墨点装饰 */
+.ink-blob { width: 160px; height: 160px; border-radius: 50%; position: relative; margin-bottom: 40px; align-self: flex-end; margin-right: 20px; }
+.ink-blob::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 40% 40%, var(--ink4), transparent 70%); }
+.ink-blob .dot { position: absolute; border-radius: 50%; background: var(--ink); }
+.blob-1 .dot { width: 60px; height: 60px; top: 50%; left: 50%; transform: translate(-50%,-50%); opacity: 0.15; }
+.blob-2 .dot:nth-child(1) { width: 40px; height: 40px; top: 30%; left: 30%; opacity: 0.12; }
+.blob-2 .dot:nth-child(2) { width: 40px; height: 40px; top: 45%; left: 50%; opacity: 0.15; }
+.blob-3 .dot:nth-child(1) { width: 30px; height: 30px; top: 20%; left: 25%; opacity: 0.08; }
+.blob-3 .dot:nth-child(2) { width: 35px; height: 35px; top: 35%; left: 45%; opacity: 0.12; }
+.blob-3 .dot:nth-child(3) { width: 45px; height: 45px; top: 50%; left: 35%; opacity: 0.18; }
+
+.ob-verse { margin-top: auto; }
+.ob-verse-num { font-size: 10px; color: var(--red); letter-spacing: 3px; margin-bottom: 16px; }
+.ob-verse-h { font-size: 28px; font-weight: 300; color: var(--ink); line-height: 1.6; letter-spacing: 2px; }
+.ob-verse-h b { font-weight: 700; }
+.ob-verse-p { font-size: 13px; color: var(--ink2); line-height: 2.2; margin-top: 16px; letter-spacing: 0.5px; }
+
+.ob-bottom { padding: 24px 32px 48px; display: flex; justify-content: space-between; align-items: center; }
+.ob-marks { display: flex; gap: 12px; }
+.ob-mk { width: 6px; height: 6px; background: var(--ink4); transition: all 0.4s; }
+.ob-mk.active { width: 24px; background: var(--ink); }
+.ob-go { height: 46px; padding: 0 24px; border-radius: 4px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.3s; letter-spacing: 1px; }
+.ob-go.final { background: var(--ink); color: var(--bg); }
+.ob-go:active { transform: scale(0.97); }
+
+/* ===== Dashboard ===== */
+.dash { position: absolute; inset: 0; z-index: 50; background: var(--bg); padding: 56px 24px 24px; overflow-y: auto; }
+
+.d-head { margin-bottom: 36px; position: relative; }
+.d-seal { position: absolute; top: 0; right: 0; width: 40px; height: 40px; border: 2px solid var(--red); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--red); font-weight: 700; transform: rotate(5deg); opacity: 0.6; }
+.d-date { font-size: 11px; color: var(--ink3); letter-spacing: 1px; }
+.d-num { font-size: 64px; font-weight: 100; color: var(--ink); line-height: 1; margin-top: 8px; }
+.d-num b { font-weight: 800; }
+.d-sub { font-size: 13px; color: var(--ink2); margin-top: 8px; }
+
+.d-today { padding: 24px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 24px; display: flex; gap: 20px; align-items: center; }
+.d-today-mark { width: 56px; height: 56px; border-radius: 50%; background: var(--red-soft); display: flex; align-items: center; justify-content: center; }
+.d-today-mark::after { content: ''; width: 16px; height: 16px; border: 2px solid var(--red); border-radius: 50%; }
+.d-today-text { flex: 1; }
+.d-today-main { font-size: 15px; color: var(--ink); font-weight: 500; }
+.d-today-hint { font-size: 12px; color: var(--ink3); margin-top: 4px; }
+.d-today-go { font-size: 12px; color: var(--red); font-weight: 500; cursor: pointer; }
+
+.d-stats { display: flex; gap: 0; margin-bottom: 28px; }
+.d-stat { flex: 1; text-align: center; padding: 16px 0; }
+.d-stat + .d-stat { border-left: 1px solid var(--border); }
+.d-stat-v { font-size: 24px; font-weight: 200; color: var(--ink); }
+.d-stat-v b { font-weight: 700; }
+.d-stat-l { font-size: 9px; color: var(--ink3); margin-top: 4px; letter-spacing: 2px; }
+
+.d-archive-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.d-archive-t { font-size: 11px; color: var(--ink3); letter-spacing: 2px; }
+.d-archive-link { font-size: 11px; color: var(--red); cursor: pointer; }
+.d-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.d-cell { aspect-ratio: 1; background: var(--surface); border-radius: 4px; position: relative; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.d-cell::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 60% 40%, rgba(44,44,44,0.04), transparent); }
+.d-cell::after { content: attr(data-d); position: absolute; bottom: 6px; left: 8px; font-size: 9px; color: var(--ink3); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="dash">
+    <div class="d-head">
+      <div class="d-seal">肖像</div>
+      <div class="d-date">二〇二六年五月十九日</div>
+      <div class="d-num"><b>15</b></div>
+      <div class="d-sub">连续记录的第十五天</div>
+    </div>
+    <div class="d-today">
+      <div class="d-today-mark"></div>
+      <div class="d-today-text">
+        <div class="d-today-main">今日 · 等待落笔</div>
+        <div class="d-today-hint">五月十九日</div>
+      </div>
+      <div class="d-today-go">记录 →</div>
+    </div>
+    <div class="d-stats">
+      <div class="d-stat"><div class="d-stat-v"><b>15</b></div><div class="d-stat-l">连续</div></div>
+      <div class="d-stat"><div class="d-stat-v"><b>5</b>/7</div><div class="d-stat-l">本周</div></div>
+      <div class="d-stat"><div class="d-stat-v"><b>42</b></div><div class="d-stat-l">总计</div></div>
+    </div>
+    <div class="d-archive-h"><div class="d-archive-t">墨迹</div><div class="d-archive-link">统计</div></div>
+    <div class="d-grid">
+      <div class="d-cell" data-d="十八"></div><div class="d-cell" data-d="十七"></div><div class="d-cell" data-d="十六"></div>
+      <div class="d-cell" data-d="十五"></div><div class="d-cell" data-d="十四"></div><div class="d-cell" data-d="十三"></div>
+    </div>
+  </div>
+
+  <div class="ob" id="ob">
+    <div class="ink-drop"></div>
+    <div class="ob-inner">
+      <div class="ob-top">
+        <div class="ob-seal">肖像</div>
+        <span class="ob-skip" onclick="finish()">跳过</span>
+      </div>
+      <div class="ob-pages">
+        <div class="ob-pg active" id="pg0">
+          <div class="ink-blob blob-1"><div class="dot"></div></div>
+          <div class="ob-verse">
+            <div class="ob-verse-num">壹</div>
+            <div class="ob-verse-h">每天<b>一笔</b><br>落在时间上</div>
+            <div class="ob-verse-p">不需要完美的光线<br>只需要你，此刻的样子<br>按下快门，留下今天的墨迹</div>
+          </div>
+        </div>
+        <div class="ob-pg" id="pg1">
+          <div class="ink-blob blob-2"><div class="dot"></div><div class="dot"></div></div>
+          <div class="ob-verse">
+            <div class="ob-verse-num">贰</div>
+            <div class="ob-verse-h">笔笔<b>对齐</b><br>方成画卷</div>
+            <div class="ob-verse-p">洋葱皮叠加帮你对齐角度<br>让每张照片构图一致<br>变化才清晰可见</div>
+          </div>
+        </div>
+        <div class="ob-pg" id="pg2">
+          <div class="ink-blob blob-3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+          <div class="ob-verse">
+            <div class="ob-verse-num">叁</div>
+            <div class="ob-verse-h">三百六十五笔<br><b>成一幅画</b></div>
+            <div class="ob-verse-p">一年的坚持<br>自动合成延时短片<br>你会看见时间写在脸上</div>
+          </div>
+        </div>
+      </div>
+      <div class="ob-bottom">
+        <div class="ob-marks"><div class="ob-mk active"></div><div class="ob-mk"></div><div class="ob-mk"></div></div>
+        <button class="ob-go" id="goBtn" onclick="next()">继续</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;margin:20px;color:#666;font-size:13px;max-width:440px;margin-left:auto;margin-right:auto;line-height:1.8;">
+  <strong>方案D · 水墨晕染</strong><br>
+  灵感：中国水墨画的留白哲学。每天拍照像每天落一笔墨，连起来是一幅画。<br>
+  配色：宣纸白底 + 浓墨文字 + 朱砂红印章。方形指示器（非圆点）。<br>
+  转场：墨滴从中心扩散晕染覆盖全屏，然后褪去。<br>
+  Dashboard：中文数字日期（十八、十九）、印章 logo、极大留白。<br>
+  文案用"落笔""墨迹"等隐喻，统一水墨意象。
+</p>
+
+<script>
+let cur=0;
+const pgs=document.querySelectorAll('.ob-pg');
+const mks=document.querySelectorAll('.ob-mk');
+const goBtn=document.getElementById('goBtn');
+function show(i){pgs.forEach((p,idx)=>p.classList.toggle('active',idx===i));mks.forEach((m,idx)=>m.classList.toggle('active',idx===i));if(i===2){goBtn.textContent='开始记录';goBtn.classList.add('final');}else{goBtn.textContent='继续';goBtn.classList.remove('final');}}
+function next(){if(cur<2){cur++;show(cur);}else finish();}
+function finish(){const o=document.getElementById('ob');o.classList.add('exit');setTimeout(()=>o.classList.add('gone'),1200);}
+</script>
+</body>
+</html>

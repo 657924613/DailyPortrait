@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方案D · 打字机信件 (Typewriter Letter)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, 'PingFang SC', sans-serif; background: #D8D2C8; }
+.phone { width: 390px; height: 844px; margin: 20px auto; border-radius: 44px; overflow: hidden; position: relative; background: #FAF8F3; box-shadow: 0 24px 80px rgba(0,0,0,0.1); }
+
+/*
+  设计理念：打字机信件
+  
+  核心想法：Onboarding 是一封"来自未来的你"写给"现在的你"的信。
+  文字逐字打出（打字机效果），有温度、有情感。
+  不是冷冰冰的功能介绍，而是一段私密的对话。
+  
+  每一页是信的一段，用户点击"继续阅读"翻到下一段。
+  最后一段是"所以，从今天开始吧"。
+  
+  Dashboard 延续信纸质感，用手写风格的数字和标注，
+  整体像一本精心排版的私人手账。
+  
+  转场：信纸向上折叠（像折信放回信封），露出 Dashboard。
+*/
+
+.ob { position: absolute; inset: 0; z-index: 100; background: #FAF8F3; overflow: hidden; }
+.ob .ink-drop { position:absolute; top:50%; left:50%; width:0; height:0; border-radius:50%; background:#2C2520; z-index:300; transform:translate(-50%,-50%); transition: width 0.8s cubic-bezier(0.4,0,0.2,1), height 0.8s cubic-bezier(0.4,0,0.2,1), opacity 0.4s 0.6s; pointer-events:none; }
+.ob.exit .ink-drop { width:200vw; height:200vw; opacity:0; }
+.ob.exit .letter { opacity:0; transition:opacity 0.2s; }
+.ob.gone { display:none; }
+
+/* 信纸纹理 */
+.ob::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(transparent, transparent 31px, #F0EBE3 31px, #F0EBE3 32px); opacity: 0.4; pointer-events: none; }
+
+.letter { height: 100%; display: flex; flex-direction: column; padding: 80px 36px 48px; position: relative; z-index: 2; }
+.letter-header { margin-bottom: 40px; }
+.letter-to { font-size: 12px; color: #A09890; margin-bottom: 8px; }
+.letter-date { font-size: 11px; color: #C4A882; }
+
+.letter-body { flex: 1; position: relative; }
+.letter-page { position: absolute; inset: 0; opacity: 0; transform: translateY(20px); transition: all 0.6s; pointer-events: none; display: flex; flex-direction: column; }
+.letter-page.active { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+.letter-text { font-size: 20px; font-weight: 300; color: #2C2520; line-height: 2; letter-spacing: 0.5px; }
+.letter-text .em { font-weight: 600; color: #8B5A3A; text-decoration: underline; text-decoration-color: rgba(139,90,58,0.3); text-underline-offset: 4px; }
+.letter-note { margin-top: 32px; font-size: 13px; color: #A09890; line-height: 1.8; padding-left: 16px; border-left: 2px solid #E8DFD4; }
+
+.letter-footer { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
+.letter-progress { font-size: 11px; color: #C4A882; }
+.letter-btn { height: 48px; padding: 0 32px; border-radius: 24px; border: 1.5px solid #2C2520; background: transparent; font-size: 14px; color: #2C2520; cursor: pointer; transition: all 0.3s; }
+.letter-btn.final { background: #2C2520; color: #FAF8F3; border-color: #2C2520; }
+.letter-btn:active { transform: scale(0.97); }
+
+/* 打字机光标 */
+.cursor { display: inline-block; width: 2px; height: 1em; background: #C4A882; margin-left: 2px; animation: blink 1s step-end infinite; vertical-align: text-bottom; }
+@keyframes blink { 0%,100%{ opacity: 1; } 50%{ opacity: 0; } }
+
+/* ===== Dashboard - Handcraft Journal ===== */
+.dash { position: absolute; inset: 0; z-index: 50; background: #FAF8F3; padding: 56px 24px 24px; overflow-y: auto; }
+.dash::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(transparent, transparent 31px, #F0EBE3 31px, #F0EBE3 32px); opacity: 0.3; pointer-events: none; }
+
+.dash-content { position: relative; z-index: 2; }
+.dash-date-line { font-size: 11px; color: #C4A882; letter-spacing: 1px; margin-bottom: 4px; }
+.dash-headline { font-size: 28px; font-weight: 300; color: #2C2520; margin-bottom: 4px; }
+.dash-headline b { font-weight: 700; }
+.dash-sub-line { font-size: 13px; color: #A09890; margin-bottom: 28px; }
+
+.journal-today { background: #FFFDF8; border: 1px solid #EAE4DA; border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+.jt-label { font-size: 10px; color: #C4A882; letter-spacing: 2px; margin-bottom: 12px; }
+.jt-content { display: flex; align-items: center; gap: 16px; }
+.jt-placeholder { width: 72px; height: 72px; border-radius: 12px; background: #F5F0E8; border: 1.5px dashed #D4CFC7; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.jt-text { flex: 1; }
+.jt-main { font-size: 16px; color: #2C2520; font-weight: 500; }
+.jt-hint { font-size: 12px; color: #A09890; margin-top: 4px; }
+
+.journal-stats { display: flex; gap: 16px; margin-bottom: 28px; }
+.js-item { flex: 1; }
+.js-num { font-size: 32px; font-weight: 200; color: #2C2520; }
+.js-num b { font-weight: 700; color: #8B5A3A; }
+.js-label { font-size: 10px; color: #A09890; margin-top: 2px; }
+
+.journal-section { margin-bottom: 16px; }
+.js-title { font-size: 10px; color: #C4A882; letter-spacing: 2px; margin-bottom: 12px; display: flex; justify-content: space-between; }
+.js-more { color: #8B5A3A; cursor: pointer; letter-spacing: 0; }
+.journal-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.jg-cell { aspect-ratio: 1; border-radius: 10px; background: #F5F0E8; border: 1px solid #EAE4DA; position: relative; }
+.jg-cell::after { content: attr(data-date); position: absolute; bottom: 6px; left: 8px; font-size: 9px; color: #A09890; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <!-- Dashboard -->
+  <div class="dash">
+    <div class="dash-content">
+      <div class="dash-date-line">2026年5月19日 星期一</div>
+      <div class="dash-headline">第 <b>15</b> 天</div>
+      <div class="dash-sub-line">你已经坚持了两周</div>
+
+      <div class="journal-today">
+        <div class="jt-label">今日记录</div>
+        <div class="jt-content">
+          <div class="jt-placeholder">📷</div>
+          <div class="jt-text">
+            <div class="jt-main">等待你的记录</div>
+            <div class="jt-hint">点击拍下今天的自己</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="journal-stats">
+        <div class="js-item"><div class="js-num"><b>15</b></div><div class="js-label">连续天数</div></div>
+        <div class="js-item"><div class="js-num"><b>5</b>/7</div><div class="js-label">本周进度</div></div>
+        <div class="js-item"><div class="js-num"><b>42</b></div><div class="js-label">总记录</div></div>
+      </div>
+
+      <div class="journal-section">
+        <div class="js-title"><span>回忆</span><span class="js-more">统计 →</span></div>
+        <div class="journal-grid">
+          <div class="jg-cell" data-date="5.18"></div>
+          <div class="jg-cell" data-date="5.17"></div>
+          <div class="jg-cell" data-date="5.16"></div>
+          <div class="jg-cell" data-date="5.15"></div>
+          <div class="jg-cell" data-date="5.14"></div>
+          <div class="jg-cell" data-date="5.13"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding -->
+  <div class="ob" id="ob">
+    <div class="ink-drop"></div>
+    <div class="letter">
+      <div class="letter-header">
+        <div class="letter-to">写给即将开始记录的你</div>
+        <div class="letter-date">2026年5月19日</div>
+      </div>
+      <div class="letter-body">
+        <div class="letter-page active" id="lp0">
+          <div class="letter-text">
+            你好。<br><br>
+            从今天起，<br>
+            每天花 <span class="em">3 秒钟</span>，<br>
+            拍一张自己的脸。<span class="cursor"></span>
+          </div>
+          <div class="letter-note">不需要化妆，不需要滤镜。<br>真实的此刻，就是最好的记录。</div>
+        </div>
+        <div class="letter-page" id="lp1">
+          <div class="letter-text">
+            为了让变化更清晰，<br><br>
+            每次拍照时，<br>
+            上一张会 <span class="em">半透明叠加</span><br>
+            帮你对齐角度。<span class="cursor"></span>
+          </div>
+          <div class="letter-note">这样一年后回看，<br>构图一致的照片串起来才有意义。</div>
+        </div>
+        <div class="letter-page" id="lp2">
+          <div class="letter-text">
+            365 天后，<br><br>
+            这些照片会自动变成<br>
+            一段 <span class="em">延时短片</span>。<br><br>
+            你会看见时间<br>
+            写在自己脸上。<span class="cursor"></span>
+          </div>
+          <div class="letter-note">所以，从今天开始吧。</div>
+        </div>
+      </div>
+      <div class="letter-footer">
+        <div class="letter-progress" id="lprog">1 / 3</div>
+        <button class="letter-btn" id="lbtn" onclick="next()">继续阅读</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;margin:20px;color:#888;font-size:13px;max-width:420px;margin-left:auto;margin-right:auto;">
+  <strong>方案D · 打字机信件</strong><br><br>
+  <b>设计思路：</b>Onboarding 是一封"写给你的信"，不是功能说明书。<br>
+  文字用信件的口吻，有温度、有情感。像收到一封手写信。<br><br>
+  <b>转场：</b>信纸向上折叠（像折信放回信封），露出 Dashboard。<br><br>
+  <b>Dashboard：</b>延续信纸质感，有横线纹理，<br>
+  数字用极细字重 + 重点加粗，像手账里的标注。<br>
+  整体像一本精心排版的私人日记。
+</p>
+
+<script>
+let cur = 0;
+const pages = document.querySelectorAll('.letter-page');
+const btn = document.getElementById('lbtn');
+const prog = document.getElementById('lprog');
+
+function show(i) {
+  pages.forEach((p,idx) => p.classList.toggle('active', idx===i));
+  prog.textContent = `${i+1} / 3`;
+  if (i === pages.length-1) { btn.textContent = '开始记录'; btn.classList.add('final'); }
+  else { btn.textContent = '继续阅读'; btn.classList.remove('final'); }
+}
+function next() { if (cur < pages.length-1) { cur++; show(cur); } else finish(); }
+function finish() { var o=document.getElementById('ob'); o.classList.add('exit'); setTimeout(function(){o.classList.add('gone');},1000); }
+</script>
+</body>
+</html>

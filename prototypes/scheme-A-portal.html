@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方案A · 门户光效 (Portal Light)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg: #F6F3EB;
+  --surface: #FEFCF7;
+  --primary: #D9683E;
+  --ink: #1A1816;
+  --ink2: #6B6660;
+  --ink3: #A39E96;
+  --green: #4A7A4F;
+  --blue: #5B7EC2;
+  --radius: 28px;
+  --font: -apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif;
+}
+body { font-family: var(--font); background: var(--bg); overflow-x: hidden; }
+.phone { width: 390px; height: 844px; margin: 20px auto; border-radius: 44px; overflow: hidden; position: relative; background: var(--bg); box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+
+/* ===== Onboarding ===== */
+.onboarding { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 100; transition: clip-path 0.8s cubic-bezier(0.4,0,0.2,1), opacity 0.6s; }
+.onboarding.exit { clip-path: circle(0% at 350px 50px); opacity: 0; }
+.onboarding .skip { position: absolute; top: 56px; right: 20px; color: var(--ink2); font-size: 14px; cursor: pointer; z-index: 10; }
+.onboarding .pages { flex:1; position: relative; }
+.onboarding .page { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 32px; opacity: 0; transform: translateX(40px); transition: all 0.5s cubic-bezier(0,0,0.2,1); pointer-events: none; }
+.onboarding .page.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+.onboarding .page.prev { opacity: 0; transform: translateX(-40px); }
+
+.glow-ring { width: 180px; height: 180px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 48px; animation: pulse 3s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{ transform: scale(1); } 50%{ transform: scale(1.05); } }
+.glow-ring .inner { width: 110px; height: 110px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.glow-ring .icon { font-size: 48px; }
+
+.page-eyebrow { font-size: 13px; letter-spacing: 2px; margin-bottom: 16px; font-weight: 500; }
+.page-title { font-size: 28px; font-weight: 700; line-height: 1.4; text-align: center; color: var(--ink); margin-bottom: 16px; }
+.page-desc { font-size: 15px; line-height: 1.7; text-align: center; color: var(--ink2); }
+
+.onboarding .bottom { padding: 0 32px 50px; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+.dots { display: flex; gap: 8px; }
+.dot { width: 6px; height: 6px; border-radius: 3px; background: var(--ink3); transition: all 0.3s; }
+.dot.active { width: 28px; background: var(--primary); }
+.btn-pill { width: 100%; height: 56px; border-radius: 28px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+.btn-dark { background: var(--ink); color: var(--bg); }
+.btn-accent { background: var(--primary); color: #fff; }
+.btn-pill:active { transform: scale(0.97); }
+
+/* ===== Dashboard ===== */
+.dashboard { position: absolute; inset: 0; padding: 56px 20px 20px; overflow-y: auto; opacity: 0; transition: opacity 0.5s 0.4s; }
+.dashboard.show { opacity: 1; }
+.dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.dash-greeting { font-size: 13px; color: var(--ink2); }
+.dash-title { font-size: 24px; font-weight: 700; color: var(--ink); }
+.dash-icons { display: flex; gap: 8px; }
+.dash-icon { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #D8D2C5; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
+
+.today-card { background: var(--surface); border-radius: var(--radius); overflow: hidden; margin-bottom: 12px; cursor: pointer; }
+.today-photo { width: 100%; aspect-ratio: 1.5; background: linear-gradient(135deg, #EDE7DA, #DED5C2); display: flex; align-items: center; justify-content: center; font-size: 36px; color: var(--ink3); }
+.today-info { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+.today-label { font-size: 12px; color: var(--ink2); }
+.today-date { font-size: 18px; font-weight: 600; color: var(--ink); }
+.today-action { font-size: 14px; color: var(--primary); font-weight: 500; }
+
+.stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.stat-card { background: var(--surface); border-radius: var(--radius); padding: 20px; aspect-ratio: 1; display: flex; flex-direction: column; justify-content: space-between; }
+.stat-label { font-size: 12px; color: var(--ink2); }
+.stat-value { font-size: 36px; font-weight: 700; color: var(--ink); }
+.stat-unit { font-size: 12px; color: var(--ink2); }
+
+.archive-header { display: flex; justify-content: space-between; align-items: center; margin: 24px 0 12px; }
+.archive-title { font-size: 18px; font-weight: 600; color: var(--ink); }
+.archive-link { font-size: 13px; color: var(--primary); cursor: pointer; }
+.archive-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.archive-cell { aspect-ratio: 1; border-radius: 14px; background: var(--surface); overflow: hidden; }
+.archive-cell .placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, #EDE7DA, #D8D2C5); display: flex; align-items: flex-end; padding: 8px; font-size: 11px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+
+/* ===== Nav tabs ===== */
+.nav-tabs { position: absolute; bottom: 0; left: 0; right: 0; height: 80px; background: var(--surface); border-top: 1px solid #EAE5D9; display: none; align-items: center; justify-content: space-around; padding-bottom: 16px; }
+.nav-tab { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; color: var(--ink2); cursor: pointer; }
+.nav-tab.active { color: var(--primary); }
+.nav-tab .tab-icon { font-size: 20px; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <!-- Onboarding -->
+  <div class="onboarding" id="onboarding">
+    <span class="skip" onclick="finishOnboarding()">跳过</span>
+    <div class="pages">
+      <div class="page active" id="page0">
+        <div class="glow-ring" style="background:radial-gradient(circle, rgba(217,104,62,0.15), transparent)">
+          <div class="inner" style="background:rgba(217,104,62,0.1)"><span class="icon">📷</span></div>
+        </div>
+        <div class="page-eyebrow" style="color:var(--primary)">第一步 · 记录</div>
+        <div class="page-title">每天一张<br>属于你的肖像</div>
+        <div class="page-desc">在固定时间记录此刻的自己<br>累积属于你的视觉档案</div>
+      </div>
+      <div class="page" id="page1">
+        <div class="glow-ring" style="background:radial-gradient(circle, rgba(74,122,79,0.15), transparent)">
+          <div class="inner" style="background:rgba(74,122,79,0.1)"><span class="icon">🧅</span></div>
+        </div>
+        <div class="page-eyebrow" style="color:var(--green)">第二步 · 对齐</div>
+        <div class="page-title">洋葱皮叠加<br>构图始终一致</div>
+        <div class="page-desc">上一张照片半透明叠加在取景框<br>帮你保持角度和位置稳定</div>
+      </div>
+      <div class="page" id="page2">
+        <div class="glow-ring" style="background:radial-gradient(circle, rgba(91,126,194,0.15), transparent)">
+          <div class="inner" style="background:rgba(91,126,194,0.1)"><span class="icon">🎬</span></div>
+        </div>
+        <div class="page-eyebrow" style="color:var(--blue)">第三步 · 回顾</div>
+        <div class="page-title">时间的痕迹<br>变成动人短片</div>
+        <div class="page-desc">365 天的坚持<br>自动合成几十秒延时视频</div>
+      </div>
+    </div>
+    <div class="bottom">
+      <div class="dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
+      <button class="btn-pill btn-dark" id="nextBtn" onclick="nextPage()">下一步</button>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="dashboard" id="dashboard">
+    <div class="dash-header">
+      <div><div class="dash-greeting">今天下午</div><div class="dash-title">第 15 天</div></div>
+      <div class="dash-icons"><div class="dash-icon">⚙️</div><div class="dash-icon" style="background:var(--primary);border:none;color:#fff">▶</div></div>
+    </div>
+    <div class="today-card">
+      <div class="today-photo">📷</div>
+      <div class="today-info">
+        <div><div class="today-label">今日</div><div class="today-date">5月19日</div></div>
+        <div class="today-action">去拍照</div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">连续</div><div><div class="stat-value">15</div><div class="stat-unit">天</div></div></div>
+      <div class="stat-card"><div class="stat-label">本周</div><div><div class="stat-value">5</div><div class="stat-unit">/ 7</div></div></div>
+    </div>
+    <div class="archive-header"><div class="archive-title">回忆相册</div><div class="archive-link">统计</div></div>
+    <div class="archive-grid">
+      <div class="archive-cell"><div class="placeholder">5.18</div></div>
+      <div class="archive-cell"><div class="placeholder">5.17</div></div>
+      <div class="archive-cell"><div class="placeholder">5.16</div></div>
+      <div class="archive-cell"><div class="placeholder">5.15</div></div>
+      <div class="archive-cell"><div class="placeholder">5.14</div></div>
+      <div class="archive-cell"><div class="placeholder">5.13</div></div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;margin:20px;color:#666;font-size:14px;">
+  <strong>方案A · 门户光效</strong><br>
+  点击"开始记录"时，Onboarding 以圆形 clip-path 收缩到右上角消失，<br>
+  仿佛一扇门关闭，光从缝隙中透出，Dashboard 从背后浮现。
+</p>
+
+<script>
+let currentPage = 0;
+const pages = document.querySelectorAll('.page');
+const dots = document.querySelectorAll('.dot');
+const nextBtn = document.getElementById('nextBtn');
+
+function showPage(idx) {
+  pages.forEach((p, i) => {
+    p.classList.remove('active', 'prev');
+    if (i === idx) p.classList.add('active');
+    else if (i < idx) p.classList.add('prev');
+  });
+  dots.forEach((d, i) => {
+    d.classList.toggle('active', i === idx);
+  });
+  if (idx === pages.length - 1) {
+    nextBtn.textContent = '开始记录';
+    nextBtn.classList.remove('btn-dark');
+    nextBtn.classList.add('btn-accent');
+  } else {
+    nextBtn.textContent = '下一步';
+    nextBtn.classList.remove('btn-accent');
+    nextBtn.classList.add('btn-dark');
+  }
+}
+
+function nextPage() {
+  if (currentPage < pages.length - 1) {
+    currentPage++;
+    showPage(currentPage);
+  } else {
+    finishOnboarding();
+  }
+}
+
+function finishOnboarding() {
+  const ob = document.getElementById('onboarding');
+  ob.classList.add('exit');
+  setTimeout(() => {
+    ob.style.display = 'none';
+    document.getElementById('dashboard').classList.add('show');
+  }, 800);
+}
+</script>
+</body>
+</html>

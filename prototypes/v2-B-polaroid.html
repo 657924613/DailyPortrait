@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方案B · 拍立得堆叠 (Polaroid Stack)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, 'PingFang SC', sans-serif; background: #D4CFC7; }
+.phone { width: 390px; height: 844px; margin: 20px auto; border-radius: 44px; overflow: hidden; position: relative; background: #F2EDE5; box-shadow: 0 24px 80px rgba(0,0,0,0.1); }
+
+/*
+  设计理念：拍立得堆叠
+  
+  核心想法：这个 App 的本质是"收集照片"。
+  Onboarding 用拍立得照片的隐喻——每一页是一张"拍立得"卡片，
+  用户通过"甩开"当前卡片来翻页（视觉上模拟丢出一张照片）。
+  
+  Dashboard 用散落的拍立得风格展示历史照片，
+  有轻微的随机旋转角度，像桌上散落的照片。
+  
+  转场：最后一张拍立得缩小飞入 Dashboard 的相册区域。
+  
+  配色：暖灰纸张底 + 手写体风格的标注 + 胶片褪色感
+*/
+
+.ob { position: absolute; inset: 0; z-index: 100; background: #F2EDE5; display: flex; flex-direction: column; }
+.ob .ink-drop { position:absolute; top:50%; left:50%; width:0; height:0; border-radius:50%; background:#2C2520; z-index:300; transform:translate(-50%,-50%); transition: width 0.8s cubic-bezier(0.4,0,0.2,1), height 0.8s cubic-bezier(0.4,0,0.2,1), opacity 0.4s 0.6s; pointer-events:none; }
+.ob.exit .ink-drop { width:200vw; height:200vw; opacity:0; }
+.ob.exit .ob-cw { opacity:0; transition:opacity 0.2s; }
+.ob.gone { display:none; }
+
+.ob-top { padding: 56px 24px 0; display: flex; justify-content: space-between; align-items: center; }
+.ob-logo { font-size: 13px; color: #8A7E72; letter-spacing: 1px; }
+.ob-skip { font-size: 13px; color: #A09890; cursor: pointer; }
+
+.ob-stage { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; padding: 20px; }
+
+/* 拍立得卡片 */
+.polaroid { position: absolute; width: 280px; background: #FFFEF9; border-radius: 4px; padding: 16px 16px 48px; box-shadow: 0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04); opacity: 0; transform: scale(0.9) rotate(3deg); transition: all 0.6s cubic-bezier(0.2,0,0.2,1); pointer-events: none; }
+.polaroid.active { opacity: 1; transform: scale(1) rotate(-1deg); pointer-events: auto; }
+.polaroid.gone { opacity: 0; transform: scale(0.8) rotate(-15deg) translateX(-200px); }
+
+.pol-photo { width: 100%; aspect-ratio: 1; border-radius: 2px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.pol-photo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent); }
+
+.pol-caption { font-size: 14px; color: #5A5048; line-height: 1.6; }
+.pol-caption .highlight { color: #9A5A3A; font-weight: 600; }
+.pol-date { font-size: 11px; color: #B5ADA5; margin-top: 8px; font-style: italic; }
+
+/* 背景装饰卡片 */
+.bg-card { position: absolute; width: 260px; height: 320px; background: #FFFEF9; border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
+.bg-card-1 { top: 15%; left: 10%; transform: rotate(8deg); opacity: 0.4; }
+.bg-card-2 { top: 20%; right: 5%; transform: rotate(-5deg); opacity: 0.3; }
+
+.ob-bottom { padding: 24px 32px 48px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.ob-counter { font-size: 12px; color: #A09890; }
+.ob-cta { width: 100%; height: 54px; border-radius: 27px; border: 2px solid #2C2520; background: transparent; font-size: 15px; font-weight: 500; color: #2C2520; cursor: pointer; transition: all 0.3s; }
+.ob-cta.final { background: #2C2520; color: #F2EDE5; border-color: #2C2520; }
+.ob-cta:active { transform: scale(0.97); }
+
+/* ===== Dashboard - Scattered Polaroids ===== */
+.dash { position: absolute; inset: 0; z-index: 50; padding: 56px 20px 20px; overflow-y: auto; }
+.dash-greeting { font-size: 12px; color: #8A7E72; letter-spacing: 1px; }
+.dash-title { font-size: 26px; font-weight: 300; color: #2C2520; margin-top: 6px; }
+.dash-title b { font-weight: 700; }
+
+.dash-today-strip { margin: 24px 0; padding: 20px; background: #FFFEF9; border-radius: 16px; border: 1px solid #EAE4DA; display: flex; align-items: center; gap: 16px; }
+.dts-circle { width: 56px; height: 56px; border-radius: 50%; border: 2px dashed #C4A882; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.dts-text { flex: 1; }
+.dts-label { font-size: 11px; color: #A09890; }
+.dts-main { font-size: 16px; font-weight: 600; color: #2C2520; margin-top: 2px; }
+.dts-sub { font-size: 12px; color: #9A5A3A; margin-top: 2px; }
+
+.dash-stats { display: flex; gap: 12px; margin-bottom: 28px; }
+.ds-item { flex: 1; text-align: center; padding: 16px 8px; background: #FFFEF9; border-radius: 14px; border: 1px solid #EAE4DA; }
+.ds-num { font-size: 22px; font-weight: 700; color: #2C2520; }
+.ds-label { font-size: 10px; color: #A09890; margin-top: 4px; }
+
+.dash-album-title { font-size: 12px; color: #8A7E72; letter-spacing: 2px; margin-bottom: 16px; }
+.scattered { position: relative; height: 320px; }
+.scat-item { position: absolute; width: 120px; background: #FFFEF9; padding: 8px 8px 28px; border-radius: 3px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+.scat-item .img { width: 100%; aspect-ratio: 1; background: #EAE4DA; border-radius: 2px; }
+.scat-item .label { font-size: 9px; color: #A09890; text-align: center; margin-top: 6px; }
+.s1 { top: 0; left: 10px; transform: rotate(-3deg); }
+.s2 { top: 20px; left: 140px; transform: rotate(2deg); }
+.s3 { top: 10px; right: 10px; transform: rotate(-1deg); }
+.s4 { top: 160px; left: 30px; transform: rotate(4deg); }
+.s5 { top: 170px; left: 160px; transform: rotate(-2deg); }
+.s6 { top: 180px; right: 20px; transform: rotate(3deg); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <!-- Dashboard -->
+  <div class="dash">
+    <div class="dash-greeting">2026年5月19日</div>
+    <div class="dash-title">你的第 <b>15</b> 天</div>
+    <div class="dash-today-strip">
+      <div class="dts-circle">📷</div>
+      <div class="dts-text">
+        <div class="dts-label">今日</div>
+        <div class="dts-main">等待记录</div>
+        <div class="dts-sub">连续 15 天</div>
+      </div>
+    </div>
+    <div class="dash-stats">
+      <div class="ds-item"><div class="ds-num">15</div><div class="ds-label">连续</div></div>
+      <div class="ds-item"><div class="ds-num">5/7</div><div class="ds-label">本周</div></div>
+      <div class="ds-item"><div class="ds-num">42</div><div class="ds-label">总计</div></div>
+    </div>
+    <div class="dash-album-title">回忆</div>
+    <div class="scattered">
+      <div class="scat-item s1"><div class="img"></div><div class="label">5.18</div></div>
+      <div class="scat-item s2"><div class="img"></div><div class="label">5.17</div></div>
+      <div class="scat-item s3"><div class="img"></div><div class="label">5.16</div></div>
+      <div class="scat-item s4"><div class="img"></div><div class="label">5.15</div></div>
+      <div class="scat-item s5"><div class="img"></div><div class="label">5.14</div></div>
+      <div class="scat-item s6"><div class="img"></div><div class="label">5.13</div></div>
+    </div>
+  </div>
+
+  <!-- Onboarding -->
+  <div class="ob" id="ob">
+    <div class="ink-drop"></div>
+    <div class="ob-cw">
+    <div class="ob-top">
+      <div class="ob-logo">每日肖像</div>
+      <span class="ob-skip" onclick="finish()">跳过</span>
+    </div>
+    <div class="ob-stage">
+      <div class="bg-card bg-card-1"></div>
+      <div class="bg-card bg-card-2"></div>
+      <div class="polaroid active" id="pol0">
+        <div class="pol-photo" style="background:#F5E6DE">
+          <span style="font-size:64px;position:relative;z-index:2">🤳</span>
+        </div>
+        <div class="pol-caption"><span class="highlight">每天一张</span>，不需要完美<br>只需要真实的此刻</div>
+        <div class="pol-date">— 第 1 天</div>
+      </div>
+      <div class="polaroid" id="pol1" style="transform:scale(0.9) rotate(5deg)">
+        <div class="pol-photo" style="background:#DEF0E0">
+          <span style="font-size:64px;position:relative;z-index:2">👤</span>
+        </div>
+        <div class="pol-caption"><span class="highlight">洋葱皮对齐</span><br>让每张构图保持一致<br>变化才清晰可见</div>
+        <div class="pol-date">— 每一天</div>
+      </div>
+      <div class="polaroid" id="pol2" style="transform:scale(0.9) rotate(-4deg)">
+        <div class="pol-photo" style="background:#DEE8F5">
+          <span style="font-size:64px;position:relative;z-index:2">🎞️</span>
+        </div>
+        <div class="pol-caption"><span class="highlight">365 张照片</span><br>自动合成延时短片<br>看见时间写在脸上</div>
+        <div class="pol-date">— 第 365 天</div>
+      </div>
+    </div>
+    <div class="ob-bottom">
+      <div class="ob-counter" id="counter">1 / 3</div>
+      <button class="ob-cta" id="cta" onclick="next()">下一张</button>
+    </div>
+    </div><!-- ob-cw -->
+  </div>
+</div>
+
+<p style="text-align:center;margin:20px;color:#888;font-size:13px;max-width:420px;margin-left:auto;margin-right:auto;">
+  <strong>方案B · 拍立得堆叠</strong><br><br>
+  <b>设计思路：</b>App 的本质是"收集照片"，所以 Onboarding 本身就是照片。<br>
+  每一页是一张拍立得卡片，翻页时当前卡片被"甩出"画面。<br><br>
+  <b>Dashboard：</b>历史照片用散落的拍立得风格展示，<br>
+  有随机旋转角度，像桌上散落的回忆。<br><br>
+  <b>配色：</b>暖灰纸张底 + 胶片褪色感，像翻开一本老相册。
+</p>
+
+<script>
+let cur = 0;
+const pols = [document.getElementById('pol0'), document.getElementById('pol1'), document.getElementById('pol2')];
+const cta = document.getElementById('cta');
+const counter = document.getElementById('counter');
+
+function show(i) {
+  pols.forEach((p, idx) => {
+    p.classList.remove('active','gone');
+    if (idx < i) p.classList.add('gone');
+    else if (idx === i) p.classList.add('active');
+  });
+  counter.textContent = `${i+1} / 3`;
+  if (i === pols.length-1) { cta.textContent = '开始记录'; cta.classList.add('final'); }
+  else { cta.textContent = '下一张'; cta.classList.remove('final'); }
+}
+function next() { if (cur < pols.length-1) { cur++; show(cur); } else finish(); }
+function finish() { var o=document.getElementById('ob'); o.classList.add('exit'); setTimeout(function(){o.classList.add('gone');},1000); }
+</script>
+</body>
+</html>

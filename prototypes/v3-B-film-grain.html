@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方案B · 胶片颗粒 (Film Grain)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, 'PingFang SC', sans-serif; background: #8A7E72; }
+.phone { width: 390px; height: 844px; margin: 20px auto; border-radius: 44px; overflow: hidden; position: relative; box-shadow: 0 30px 80px rgba(0,0,0,0.15); }
+
+/*
+  设计理念：胶片颗粒 (Film Grain)
+  
+  灵感来源：柯达 Portra 400 胶片的色调 + 暗房冲印的仪式感。
+  
+  核心隐喻：每天拍照就像每天"冲洗"一张胶片。
+  App 本身就是你的私人暗房。
+  
+  视觉语言：
+  - 背景：暖奶油色（#FBF7F0）—— 像未曝光的相纸
+  - 强调色：柯达黄（#E8A838）+ 暗红（#A04030）—— 胶片盒的经典配色
+  - 装饰：胶片齿孔边框、颗粒纹理叠加、圆角极小（像照片边缘）
+  - 排版：紧凑、信息密度适中、数字用等宽感
+  
+  转场：像快门按下 —— 屏幕瞬间变白（曝光），然后"显影"出 Dashboard
+*/
+
+:root {
+  --bg: #FBF7F0;
+  --surface: #FFFFFF;
+  --kodak: #E8A838;
+  --red: #A04030;
+  --ink: #2A2018;
+  --ink2: #6A5A48;
+  --ink3: #A89880;
+  --border: #E8E0D4;
+  --film-bg: #F5EFE4;
+}
+
+/* 胶片颗粒纹理 */
+.phone::after {
+  content: ''; position: absolute; inset: 0; z-index: 999; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.02; mix-blend-mode: multiply;
+}
+
+/* ===== Onboarding ===== */
+.ob { position: absolute; inset: 0; z-index: 100; background: var(--bg); display: flex; flex-direction: column; }
+.ob .ink-drop { position:absolute; top:50%; left:50%; width:0; height:0; border-radius:50%; background:var(--kodak); z-index:300; transform:translate(-50%,-50%); transition: width 0.8s cubic-bezier(0.4,0,0.2,1), height 0.8s cubic-bezier(0.4,0,0.2,1), opacity 0.4s 0.6s; pointer-events:none; }
+.ob.exit .ink-drop { width:200vw; height:200vw; opacity:0; }
+.ob.exit .ob-content { opacity: 0; transition: opacity 0.2s; }
+.ob.gone { display: none; }
+
+.ob-content { height: 100%; display: flex; flex-direction: column; position: relative; z-index: 2; }
+
+/* 胶片齿孔装饰 */
+.film-edge { position: absolute; top: 0; bottom: 0; width: 20px; display: flex; flex-direction: column; justify-content: space-evenly; padding: 60px 0; }
+.film-edge.left { left: 6px; }
+.film-edge.right { right: 6px; }
+.film-hole { width: 10px; height: 14px; border-radius: 3px; background: var(--film-bg); border: 1px solid var(--border); }
+
+.ob-header { padding: 56px 40px 0; display: flex; justify-content: space-between; align-items: center; }
+.ob-logo { display: flex; align-items: center; gap: 8px; }
+.ob-logo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--kodak); }
+.ob-logo-text { font-size: 12px; font-weight: 600; color: var(--ink); letter-spacing: 1px; }
+.ob-skip { font-size: 12px; color: var(--ink3); cursor: pointer; }
+
+.ob-main { flex: 1; position: relative; padding: 0 40px; }
+.ob-frame { position: absolute; inset: 32px 40px; opacity: 0; transform: translateX(60px); transition: all 0.5s cubic-bezier(0,0,0.2,1); pointer-events: none; display: flex; flex-direction: column; }
+.ob-frame.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+.ob-frame.prev { transform: translateX(-60px); opacity: 0; }
+
+/* 照片框 */
+.photo-frame { width: 100%; aspect-ratio: 0.85; background: var(--film-bg); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 28px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+.photo-frame .exposure { position: absolute; top: 10px; right: 10px; font-size: 9px; color: var(--ink3); font-family: monospace; }
+.photo-frame .frame-num { position: absolute; bottom: 8px; right: 10px; font-size: 9px; color: var(--red); font-family: monospace; }
+
+/* 抽象图形代替图标 */
+.abstract { position: relative; }
+.abs-circle { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--ink); position: relative; }
+.abs-circle::before { content: ''; position: absolute; inset: 15px; border-radius: 50%; background: var(--kodak); opacity: 0.2; }
+.abs-cross { position: absolute; top: 50%; left: 50%; width: 40px; height: 2px; background: var(--ink); transform: translate(-50%,-50%); }
+.abs-cross::after { content: ''; position: absolute; top: 50%; left: 50%; width: 2px; height: 40px; background: var(--ink); transform: translate(-50%,-50%); }
+
+.abs-stack { position: relative; width: 70px; height: 80px; }
+.abs-stack span { position: absolute; width: 50px; height: 60px; border: 1.5px solid var(--ink); border-radius: 3px; }
+.abs-stack span:nth-child(1) { top:0; left:0; transform: rotate(-3deg); }
+.abs-stack span:nth-child(2) { top:4px; left:8px; transform: rotate(1deg); background: rgba(232,168,56,0.1); }
+.abs-stack span:nth-child(3) { top:8px; left:16px; transform: rotate(3deg); background: rgba(232,168,56,0.15); }
+
+.abs-play { width: 70px; height: 70px; border-radius: 50%; border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; }
+.abs-play::after { content: ''; width: 0; height: 0; border-left: 20px solid var(--ink); border-top: 12px solid transparent; border-bottom: 12px solid transparent; margin-left: 4px; }
+
+.ob-text { }
+.ob-tag { display: inline-block; font-size: 10px; letter-spacing: 2px; color: var(--red); margin-bottom: 12px; padding: 4px 10px; border: 1px solid var(--red); border-radius: 3px; }
+.ob-h { font-size: 24px; font-weight: 600; color: var(--ink); line-height: 1.4; margin-bottom: 10px; }
+.ob-p { font-size: 13px; color: var(--ink2); line-height: 1.8; }
+
+.ob-footer { padding: 20px 40px 44px; display: flex; justify-content: space-between; align-items: center; }
+.ob-counter { font-size: 11px; color: var(--ink3); font-family: monospace; }
+.ob-next { height: 46px; padding: 0 28px; border-radius: 23px; border: none; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.ob-next-default { background: var(--ink); color: var(--bg); }
+.ob-next-final { background: var(--kodak); color: var(--ink); }
+.ob-next:active { transform: scale(0.96); }
+
+/* ===== Dashboard ===== */
+.dash { position: absolute; inset: 0; z-index: 50; background: var(--bg); padding: 56px 20px 20px; overflow-y: auto; }
+
+.d-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+.d-info {}
+.d-date { font-size: 11px; color: var(--ink3); font-family: monospace; }
+.d-title { font-size: 24px; font-weight: 600; color: var(--ink); margin-top: 4px; }
+.d-streak { font-size: 12px; color: var(--kodak); margin-top: 4px; font-weight: 500; }
+.d-btns { display: flex; gap: 8px; }
+.d-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--surface); cursor: pointer; }
+
+.d-hero { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.03); }
+.d-hero-img { width: 100%; aspect-ratio: 1.4; background: var(--film-bg); display: flex; align-items: center; justify-content: center; position: relative; }
+.d-hero-img .guide { width: 80px; height: 80px; border-radius: 50%; border: 1.5px dashed var(--ink3); }
+.d-hero-img .exp { position: absolute; top: 8px; right: 10px; font-size: 9px; color: var(--ink3); font-family: monospace; }
+.d-hero-bar { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); }
+.d-hero-date { font-size: 14px; font-weight: 500; color: var(--ink); }
+.d-hero-cta { font-size: 12px; color: var(--kodak); font-weight: 600; cursor: pointer; }
+
+.d-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+.d-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 10px; text-align: center; }
+.d-stat-v { font-size: 20px; font-weight: 700; color: var(--ink); font-family: monospace; }
+.d-stat-l { font-size: 9px; color: var(--ink3); margin-top: 4px; letter-spacing: 1px; }
+
+.d-section-h { font-size: 10px; letter-spacing: 2px; color: var(--ink3); margin-bottom: 10px; display: flex; justify-content: space-between; }
+.d-section-link { color: var(--kodak); letter-spacing: 0; cursor: pointer; }
+.d-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+.d-cell { aspect-ratio: 1; background: var(--film-bg); border: 1px solid var(--border); border-radius: 4px; position: relative; }
+.d-cell::after { content: attr(data-d); position: absolute; bottom: 4px; right: 6px; font-size: 8px; color: var(--ink3); font-family: monospace; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="dash">
+    <div class="d-top">
+      <div class="d-info">
+        <div class="d-date">2026.05.19</div>
+        <div class="d-title">第 15 天</div>
+        <div class="d-streak">● 连续记录中</div>
+      </div>
+      <div class="d-btns"><div class="d-btn">⚙</div><div class="d-btn" style="background:var(--kodak);border-color:var(--kodak);color:#fff">▶</div></div>
+    </div>
+    <div class="d-hero">
+      <div class="d-hero-img"><div class="guide"></div><div class="exp">F/2.0 1/60</div></div>
+      <div class="d-hero-bar"><div class="d-hero-date">5月19日 · 今日</div><div class="d-hero-cta">拍照 →</div></div>
+    </div>
+    <div class="d-row">
+      <div class="d-stat"><div class="d-stat-v">15</div><div class="d-stat-l">连续</div></div>
+      <div class="d-stat"><div class="d-stat-v">5/7</div><div class="d-stat-l">本周</div></div>
+      <div class="d-stat"><div class="d-stat-v">042</div><div class="d-stat-l">总计</div></div>
+    </div>
+    <div class="d-section-h"><span>底片</span><span class="d-section-link">统计</span></div>
+    <div class="d-grid">
+      <div class="d-cell" data-d="018"></div><div class="d-cell" data-d="017"></div><div class="d-cell" data-d="016"></div>
+      <div class="d-cell" data-d="015"></div><div class="d-cell" data-d="014"></div><div class="d-cell" data-d="013"></div>
+    </div>
+  </div>
+
+  <div class="ob" id="ob">
+    <div class="ink-drop"></div>
+    <div class="ob-content">
+      <div class="film-edge left"><div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div></div>
+      <div class="film-edge right"><div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div><div class="film-hole"></div></div>
+      <div class="ob-header">
+        <div class="ob-logo"><div class="ob-logo-dot"></div><div class="ob-logo-text">每日肖像</div></div>
+        <span class="ob-skip" onclick="finish()">跳过</span>
+      </div>
+      <div class="ob-main">
+        <div class="ob-frame active" id="f0">
+          <div class="photo-frame">
+            <div class="abstract"><div class="abs-circle"><div class="abs-cross"></div></div></div>
+            <div class="exposure">ISO 400</div><div class="frame-num">01A</div>
+          </div>
+          <div class="ob-text">
+            <div class="ob-tag">记录</div>
+            <div class="ob-h">每天一张<br>真实的此刻</div>
+            <div class="ob-p">不需要滤镜，不需要修图<br>按下快门，记录此刻的你</div>
+          </div>
+        </div>
+        <div class="ob-frame" id="f1">
+          <div class="photo-frame">
+            <div class="abstract"><div class="abs-stack"><span></span><span></span><span></span></div></div>
+            <div class="exposure">ISO 400</div><div class="frame-num">02A</div>
+          </div>
+          <div class="ob-text">
+            <div class="ob-tag">对齐</div>
+            <div class="ob-h">洋葱皮叠加<br>构图始终一致</div>
+            <div class="ob-p">上一张半透明覆盖取景框<br>帮你保持角度和位置稳定</div>
+          </div>
+        </div>
+        <div class="ob-frame" id="f2">
+          <div class="photo-frame">
+            <div class="abstract"><div class="abs-play"></div></div>
+            <div class="exposure">ISO 400</div><div class="frame-num">36A</div>
+          </div>
+          <div class="ob-text">
+            <div class="ob-tag">回顾</div>
+            <div class="ob-h">365 帧<br>变成延时短片</div>
+            <div class="ob-p">一年的坚持自动合成视频<br>看见时间写在你脸上</div>
+          </div>
+        </div>
+      </div>
+      <div class="ob-footer">
+        <div class="ob-counter" id="cnt">01 / 03</div>
+        <button class="ob-next ob-next-default" id="nbtn" onclick="next()">下一帧</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;margin:20px;color:#666;font-size:13px;max-width:440px;margin-left:auto;margin-right:auto;line-height:1.8;">
+  <strong>方案B · 胶片颗粒</strong><br>
+  灵感：柯达 Portra 400 胶片 + 暗房冲印。App 是你的私人暗房。<br>
+  配色：暖奶油底 + 柯达黄强调 + 暗红标签。胶片齿孔边框 + 颗粒纹理。<br>
+  转场：快门闪光（屏幕瞬间变白），然后"显影"出 Dashboard。<br>
+  细节：照片框带 ISO/光圈标注、帧号，等宽字体数字。
+</p>
+
+<script>
+let cur=0;
+const frames=document.querySelectorAll('.ob-frame');
+const nbtn=document.getElementById('nbtn');
+const cnt=document.getElementById('cnt');
+function show(i){frames.forEach((f,idx)=>{f.classList.remove('active','prev');if(idx===i)f.classList.add('active');else if(idx<i)f.classList.add('prev');});cnt.textContent=`0${i+1} / 03`;if(i===2){nbtn.textContent='开始记录';nbtn.className='ob-next ob-next-final';}else{nbtn.textContent='下一帧';nbtn.className='ob-next ob-next-default';}}
+function next(){if(cur<2){cur++;show(cur);}else finish();}
+function finish(){var o=document.getElementById('ob');o.classList.add('exit');setTimeout(function(){o.classList.add('gone');},1000);}
+</script>
+</body>
+</html>

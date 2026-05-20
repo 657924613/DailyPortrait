@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方案A · 时间轴叙事 (Timeline Narrative)</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, 'PingFang SC', sans-serif; background: #E8E4DE; display:flex; justify-content:center; padding:20px 0; }
+.phone { width: 390px; height: 844px; border-radius: 44px; overflow: hidden; position: relative; background: #FFFDF8; box-shadow: 0 24px 80px rgba(0,0,0,0.1); }
+
+:root {
+  --bg: #FFFDF8;
+  --surface: #FFFFFF;
+  --primary: #C4A882;
+  --ink: #2C2520;
+  --ink2: #7A6E65;
+  --ink3: #A09890;
+  --border: #E8DFD4;
+}
+
+/* ===== Onboarding ===== */
+.ob { position: absolute; inset: 0; z-index: 100; background: var(--bg); overflow: hidden; }
+.ob .ink-drop { position:absolute; top:50%; left:50%; width:0; height:0; border-radius:50%; background:var(--ink); z-index:300; transform:translate(-50%,-50%); transition: width 0.8s cubic-bezier(0.4,0,0.2,1), height 0.8s cubic-bezier(0.4,0,0.2,1), opacity 0.4s 0.6s; pointer-events:none; }
+.ob.exit .ink-drop { width:200vw; height:200vw; opacity:0; }
+.ob.exit .ob-inner { opacity:0; transition:opacity 0.2s; }
+.ob.gone { display:none; }
+
+.ob-inner { height:100%; display:flex; flex-direction:column; position:relative; z-index:2; }
+.ob-header { padding:56px 36px 0; display:flex; justify-content:flex-end; }
+.ob-skip { font-size:13px; color:var(--ink3); cursor:pointer; }
+.ob-slides { flex:1; position:relative; }
+.ob-slide { display:none; height:100%; padding:32px 36px 0 60px; flex-direction:column; justify-content:center; }
+.ob-slide.active { display:flex; }
+.ob-day { font-size:11px; letter-spacing:3px; color:var(--ink3); margin-bottom:12px; font-weight:500; }
+.ob-day::before { content:''; display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--primary); margin-right:10px; vertical-align:middle; }
+.ob-title { font-size:32px; font-weight:300; color:var(--ink); line-height:1.3; margin-bottom:20px; }
+.ob-title strong { font-weight:700; }
+.ob-body { font-size:15px; color:var(--ink2); line-height:1.9; }
+.ob-footer { padding:20px 36px 44px; display:flex; flex-direction:column; align-items:stretch; gap:16px; }
+.ob-progress { height:3px; background:#F0EBE4; border-radius:2px; overflow:hidden; }
+.ob-progress-fill { height:100%; background:var(--primary); border-radius:2px; transition:width 0.5s; }
+.ob-btn { height:56px; border-radius:14px; border:none; font-size:15px; font-weight:500; cursor:pointer; letter-spacing:0.5px; }
+.ob-btn-next { background:var(--ink); color:var(--bg); }
+.ob-btn-start { background:var(--primary); color:var(--bg); }
+.ob-btn:active { transform:scale(0.97); opacity:0.9; }
+
+/* ===== Dashboard - 月份折叠时间轴 ===== */
+/*
+  优化思路：不再一天一条无限列表。
+  改为"月份折叠"——每个月是一个横向照片条（最多31张缩略图），
+  纵向只有月份数量（12个月=12行），完全可控。
+  
+  最近一周用大卡片展示，更早的按月折叠成缩略图行。
+  这样既保留了时间轴的叙事感，又不会在数据量大时崩溃。
+*/
+.dash { position:absolute; inset:0; z-index:50; background:var(--bg); padding:56px 0 0; overflow-y:auto; }
+
+.dash-head { padding:0 28px 20px; }
+.dash-date { font-size:11px; color:var(--ink3); letter-spacing:2px; }
+.dash-h1 { font-size:28px; font-weight:300; color:var(--ink); margin-top:4px; }
+.dash-h1 strong { font-weight:700; }
+.dash-actions { display:flex; gap:10px; margin-top:16px; }
+.dash-action { height:36px; padding:0 18px; border-radius:18px; border:1px solid var(--border); background:transparent; font-size:13px; color:var(--ink); cursor:pointer; display:flex; align-items:center; gap:6px; }
+.dash-action.primary { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+
+/* 今日卡片 */
+.dash-today { margin:0 20px 24px; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:20px; display:flex; gap:16px; align-items:center; }
+.dash-today-circle { width:64px; height:64px; border-radius:50%; border:2px dashed var(--primary); display:flex; align-items:center; justify-content:center; font-size:24px; animation: breathe 3s ease-in-out infinite; }
+@keyframes breathe { 0%,100%{ transform:scale(1); opacity:0.7; } 50%{ transform:scale(1.04); opacity:1; } }
+.dash-today-info { flex:1; }
+.dash-today-label { font-size:11px; color:var(--ink3); }
+.dash-today-title { font-size:17px; font-weight:600; color:var(--ink); margin-top:2px; }
+.dash-today-sub { font-size:12px; color:var(--primary); margin-top:4px; }
+
+/* 最近一周：大缩略图横滑 */
+.section-label { padding:0 28px; font-size:10px; color:var(--ink3); letter-spacing:2px; margin-bottom:10px; }
+.recent-strip { display:flex; gap:10px; padding:0 28px; overflow-x:auto; margin-bottom:28px; scrollbar-width:none; }
+.recent-strip::-webkit-scrollbar { display:none; }
+.recent-card { width:100px; flex-shrink:0; }
+.recent-thumb { width:100px; height:100px; border-radius:14px; background:linear-gradient(135deg, #EDE7DA, #D8D2C5); margin-bottom:6px; }
+.recent-date { font-size:10px; color:var(--ink3); text-align:center; }
+
+/* 月份折叠行 */
+.month-section { padding:0 28px; margin-bottom:20px; }
+.month-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.month-title { font-size:13px; font-weight:600; color:var(--ink); }
+.month-count { font-size:11px; color:var(--ink3); }
+.month-row { display:flex; gap:4px; overflow-x:auto; scrollbar-width:none; }
+.month-row::-webkit-scrollbar { display:none; }
+.month-cell { width:32px; height:32px; border-radius:6px; background:var(--border); flex-shrink:0; }
+.month-cell.filled { background:linear-gradient(135deg, #E8DFD4, #D4CFC5); }
+.month-cell.empty { background:#F5F2EC; border:1px dashed var(--border); }
+
+/* 底部留白 */
+.dash-bottom-space { height:40px; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <!-- Dashboard -->
+  <div class="dash">
+    <div class="dash-head">
+      <div class="dash-date">2026年5月19日 · 星期一</div>
+      <div class="dash-h1">第 <strong>15</strong> 天</div>
+      <div class="dash-actions">
+        <button class="dash-action primary">📷 拍照</button>
+        <button class="dash-action">▶ 视频</button>
+        <button class="dash-action">⚙</button>
+      </div>
+    </div>
+
+    <div class="dash-today">
+      <div class="dash-today-circle">📷</div>
+      <div class="dash-today-info">
+        <div class="dash-today-label">今日打卡</div>
+        <div class="dash-today-title">等待你的记录</div>
+        <div class="dash-today-sub">连续 15 天 · 本周 5/7</div>
+      </div>
+    </div>
+
+    <div class="section-label">最近 7 天</div>
+    <div class="recent-strip">
+      <div class="recent-card"><div class="recent-thumb"></div><div class="recent-date">5.18</div></div>
+      <div class="recent-card"><div class="recent-thumb"></div><div class="recent-date">5.17</div></div>
+      <div class="recent-card"><div class="recent-thumb"></div><div class="recent-date">5.16</div></div>
+      <div class="recent-card"><div class="recent-thumb"></div><div class="recent-date">5.15</div></div>
+      <div class="recent-card"><div class="recent-thumb"></div><div class="recent-date">5.14</div></div>
+      <div class="recent-card"><div class="recent-thumb"></div><div class="recent-date">5.13</div></div>
+      <div class="recent-card"><div class="recent-thumb"></div><div class="recent-date">5.12</div></div>
+    </div>
+
+    <div class="month-section">
+      <div class="month-header">
+        <div class="month-title">5月</div>
+        <div class="month-count">16 / 19 天</div>
+      </div>
+      <div class="month-row">
+        <div class="month-cell filled"></div><div class="month-cell filled"></div><div class="month-cell filled"></div>
+        <div class="month-cell filled"></div><div class="month-cell filled"></div><div class="month-cell filled"></div>
+        <div class="month-cell empty"></div><div class="month-cell filled"></div><div class="month-cell filled"></div>
+        <div class="month-cell filled"></div><div class="month-cell empty"></div><div class="month-cell filled"></div>
+        <div class="month-cell filled"></div><div class="month-cell filled"></div><div class="month-cell filled"></div>
+        <div class="month-cell filled"></div><div class="month-cell filled"></div><div class="month-cell filled"></div>
+        <div class="month-cell empty"></div>
+      </div>
+    </div>
+
+    <div class="month-section">
+      <div class="month-header">
+        <div class="month-title">4月</div>
+        <div class="month-count">23 / 30 天</div>
+      </div>
+      <div class="month-row">
+        <div class="month-cell filled"></div><div class="month-cell filled"></div><div class="month-cell filled"></div>
+        <div class="month-cell empty"></div><div class="month-cell filled"></div><div class="month-cell filled"></div>
+        <div class="month-cell filled"></div><div class="month-cell filled"></div><div class="month-cell empty"></div>
+        <div class="month-cell filled"></div><div class="month-cell filled"></div><div class="month-cell filled"></div>
+        <div class="month-cell filled"></div><div class="month-cell empty"></div><div class="month-cell filled"></div>
+        <div class="month-cell filled"></div><div class="month-cell filled"></div><div class="month-cell filled"></div>
+        <div class="month-cell empty"></div><div class="month-cell filled"></div><div class="month-cell filled"></div>
+        <div class="month-cell filled"></div><div class="month-cell filled"></div><div class="month-cell empty"></div>
+        <div class="month-cell filled"></div><div class="month-cell filled"></div><div class="month-cell empty"></div>
+        <div class="month-cell filled"></div><div class="month-cell filled"></div><div class="month-cell empty"></div>
+      </div>
+    </div>
+
+    <div class="dash-bottom-space"></div>
+  </div>
+
+  <!-- Onboarding -->
+  <div class="ob" id="ob">
+    <div class="ink-drop"></div>
+    <div class="ob-inner">
+      <div class="ob-header"><span class="ob-skip" onclick="finish()">跳过</span></div>
+      <div class="ob-slides">
+        <div class="ob-slide active" id="os0">
+          <div class="ob-day">第 1 天</div>
+          <div class="ob-title">一切从<br><strong>一张照片</strong>开始</div>
+          <div class="ob-body">不需要完美的光线<br>不需要精心的准备<br>只需要你，此刻的样子</div>
+        </div>
+        <div class="ob-slide" id="os1">
+          <div class="ob-day">每一天</div>
+          <div class="ob-title">同一个位置<br><strong>同一个你</strong></div>
+          <div class="ob-body">洋葱皮叠加帮你对齐角度<br>让每张照片构图一致<br>变化才更清晰可见</div>
+        </div>
+        <div class="ob-slide" id="os2">
+          <div class="ob-day">第 365 天</div>
+          <div class="ob-title">回头看<br><strong>时间写在脸上</strong></div>
+          <div class="ob-body">一年的坚持<br>变成几十秒的延时短片<br>你会惊讶于自己的变化</div>
+        </div>
+      </div>
+      <div class="ob-footer">
+        <div class="ob-progress"><div class="ob-progress-fill" id="progFill" style="width:33%"></div></div>
+        <button class="ob-btn ob-btn-next" id="obBtn" onclick="next()">继续</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;margin:20px;color:#888;font-size:13px;max-width:440px;margin-left:auto;margin-right:auto;line-height:1.8;">
+  <strong>方案A · 时间轴叙事（优化版）</strong><br>
+  Dashboard 改为"月份折叠"：最近一周用大缩略图横滑，<br>
+  更早的按月折叠成小方块行（每月一行，横向滚动）。<br>
+  一年 = 12 行，完全可控。空白格一眼看出哪天漏拍。
+</p>
+
+<script>
+var cur = 0;
+var slides = document.querySelectorAll('.ob-slide');
+var btn = document.getElementById('obBtn');
+var fill = document.getElementById('progFill');
+
+function show(i) {
+  for (var j = 0; j < slides.length; j++) { slides[j].classList.remove('active'); }
+  slides[i].classList.add('active');
+  fill.style.width = ((i+1)/slides.length*100) + '%';
+  if (i === slides.length-1) { btn.textContent = '开始记录'; btn.className = 'ob-btn ob-btn-start'; }
+  else { btn.textContent = '继续'; btn.className = 'ob-btn ob-btn-next'; }
+}
+function next() { if (cur < slides.length-1) { cur++; show(cur); } else finish(); }
+function finish() { var o=document.getElementById('ob'); o.classList.add('exit'); setTimeout(function(){o.classList.add('gone');},1000); }
+</script>
+</body>
+</html>
